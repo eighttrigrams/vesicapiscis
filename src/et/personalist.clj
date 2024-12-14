@@ -1,4 +1,4 @@
-(ns personalist.datastore
+(ns et.personalist
   (:require [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [cheshire.core :as json]

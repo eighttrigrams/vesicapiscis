@@ -1,4 +1,4 @@
-(ns personalist.datastore.search
+(ns et.personalist.search
   (:require [clojure.set :as set]
             [cambium.core :as log]
             [clojure.string :as str]

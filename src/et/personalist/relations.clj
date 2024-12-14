@@ -1,4 +1,4 @@
-(ns personalist.datastore.relations
+(ns et.personalist.relations
   (:require [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [cambium.core :as log]
