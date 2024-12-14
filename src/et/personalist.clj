@@ -165,7 +165,7 @@
       (#(jdbc/execute! db % {:return-keys true}))))
 
 (defn- update-item' [db {:keys [id title short_title tags data] :as item}]
-  (log/info "update-item'")
+  (log/info "update-item''''")
   (let [old-item      (get-item db item)
         old-data      (:data old-item)
         data          (if data
