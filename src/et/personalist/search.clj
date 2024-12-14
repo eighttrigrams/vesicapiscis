@@ -5,7 +5,7 @@
             [clojure.pprint :as pp]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
-            [personalist.datastore.helpers
+            [et.personalist.helpers
              :refer [un-namespace-keys post-process-base]]))
 
 (defn get-title

@@ -3,8 +3,8 @@
             [honey.sql :as sql]
             [cheshire.core :as json]
             [cambium.core :as log]
-            [personalist.datastore.relations :as datastore.relations]
-            [personalist.datastore.helpers
+            [et.personalist.relations :as datastore.relations]
+            [et.personalist.helpers
              :refer [un-namespace-keys post-process-base]]))
 
 (defn delete-date [db issue-id]
