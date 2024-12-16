@@ -1,4 +1,4 @@
-(ns et.personalist.relations
+(ns et.vp.ds.relations
   (:require [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [cambium.core :as log]

@@ -1,10 +1,10 @@
-(ns et.personalist
+(ns et.vp.ds
   (:require [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [cheshire.core :as json]
             [cambium.core :as log]
-            [et.personalist.relations :as datastore.relations]
-            [et.personalist.helpers
+            [et.vp.ds.relations :as datastore.relations]
+            [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]]))
 
 (defn delete-date [db issue-id]

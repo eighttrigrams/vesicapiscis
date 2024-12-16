@@ -1,4 +1,4 @@
-(ns et.personalist.helpers
+(ns et.vp.ds.helpers
   (:require [cheshire.core :as json]))
 
 (defn namespace-keys

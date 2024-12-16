@@ -1,11 +1,11 @@
-(ns et.personalist.search
+(ns et.vp.ds.search
   (:require [clojure.set :as set]
             [cambium.core :as log]
             [clojure.string :as str]
             [clojure.pprint :as pp]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
-            [et.personalist.helpers
+            [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]]))
 
 (defn get-title
