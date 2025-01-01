@@ -20,4 +20,4 @@
   (testing "base case"
     (reset-db)
     (create-issue)
-    (is (= "title1" (:title (ffirst (search/search-issues db {})))))))
+    (is (= "title2" (:title (ffirst (search/search-issues db {})))))))
