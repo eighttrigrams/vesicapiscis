@@ -63,7 +63,6 @@
 
 ;; TODO test pin events
 
-;; TODO add cases with flipped search order
 (deftest search
   (testing "base case - overview"
     (reset-db)
@@ -74,8 +73,10 @@
     (reset-db)
     (let [[item-1 item-2] (create-issue)]
       (is (= "title-1-2" (q {:selected-context item-1})))
+      (is (= "title-1-1" (q {:selected-context (assoc-in item-1 [:data :views :current :search-mode] 1)})))
       (is (= "title-1-1" (q {:selected-context item-1
                               :q "abc"})))
       (is (= "title-2-2" (q {:selected-context item-2})))
+      (is (= "title-2-1" (q {:selected-context (assoc-in item-2 [:data :views :current :search-mode] 1)})))
       (is (= "title-2-1" (q {:selected-context item-2
                               :q "abc"}))))))
