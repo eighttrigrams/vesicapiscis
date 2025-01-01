@@ -9,7 +9,6 @@
 
 (defn reset-db []
   (jdbc/execute-one! db ["delete from collections"])
-  (jdbc/execute-one! db ["delete from issue_issue"])
   (jdbc/execute-one! db ["delete from issues"]))
 
 (def time-fn 
