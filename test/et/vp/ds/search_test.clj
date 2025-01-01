@@ -41,29 +41,19 @@
     (ds/new-context db opts)))
 
 (defn- create-issue []
-  (let [item-1 (with-time
-                 (fn []
-                   (new-item db {:title "title-1"})))
-        item-2 (with-time
-                  (fn []
-                    (new-item db {:title "title-2"})))
-        _item-1-1 (with-time
-                    (fn []
-                      (new-item db {:title "title-1-1"
-                                    :context-ids-set #{(:id item-1)}})))
-        _item-1-2 (with-time
-                    (fn []
-                      (new-item db {:title "title-1-2" 
-                                    :context-ids-set #{(:id item-1)}})))
-        _item-2-1 (with-time
-                    (fn []
-                      (new-item db {:title "title-2-1"
-                                    :context-ids-set #{(:id item-2)}})))
-        _item-2-1 (with-time
-                    (fn []
-                      (new-item db {:title "title-2-2" 
-                                    :context-ids-set #{(:id item-2)}})))]
-    [item-1 item-2]))
+  (with-time
+    (fn []
+      (let [item-1 (new-item db {:title "title-1"})
+            item-2 (new-item db {:title "title-2"})
+            _item-1-1 (new-item db {:title "title-1-1"
+                                    :context-ids-set #{(:id item-1)}})
+            _item-1-2 (new-item db {:title "title-1-2" 
+                                    :context-ids-set #{(:id item-1)}})
+            _item-2-1 (new-item db {:title "title-2-1"
+                                    :context-ids-set #{(:id item-2)}})
+            _item-2-1 (new-item db {:title "title-2-2" 
+                          :context-ids-set #{(:id item-2)}})]
+        [item-1 item-2]))))
 
 ;; TODO test pin events
 
