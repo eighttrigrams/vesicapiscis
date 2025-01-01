@@ -1,1 +1,5 @@
 .clj-kondo
+.calva
+.cpcache
+.nrepl-port
+test_config.edn
