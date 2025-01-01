@@ -28,7 +28,7 @@
    but the only result."
   ([] (q {}))
   ([opts]
-   (first (search/search-issues db opts))))
+   (:title (ffirst (search/search-issues db opts)))))
 
 (defn- new-item 
   "In place because I want to end up having only new-item, 
@@ -68,14 +68,14 @@
   (testing "base case - overview"
     (reset-db)
     (create-issue)
-    (is (= "title-2-2" (:title (first (q)))))
-    (is (= "title-2-1" (:title (first (q {:q "abc"}))))))
+    (is (= "title-2-2" (q)))
+    (is (= "title-2-1" (q {:q "abc"}))))
   (testing "in context"
     (reset-db)
     (let [[item-1 item-2] (create-issue)]
-      (is (= "title-1-2" (:title (first (q {:selected-context item-1})))))
-      (is (= "title-1-1" (:title (first (q {:selected-context item-1
-                                            :q "abc"})))))
-      (is (= "title-2-2" (:title (first (q {:selected-context item-2})))))
-      (is (= "title-2-1" (:title (first (q {:selected-context item-2
-                                            :q "abc"}))))))))
+      (is (= "title-1-2" (q {:selected-context item-1})))
+      (is (= "title-1-1" (q {:selected-context item-1
+                              :q "abc"})))
+      (is (= "title-2-2" (q {:selected-context item-2})))
+      (is (= "title-2-1" (q {:selected-context item-2
+                              :q "abc"}))))))
