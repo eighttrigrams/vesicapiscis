@@ -119,6 +119,7 @@
      (is (= "title-1-1" (q item-1 {:events-view 1})))
      (is (= "title-2-2" (q item-2 {:events-view 2}))))))
 
+
 ;; TODO test pin events
 
 ;; TODO test intersections
