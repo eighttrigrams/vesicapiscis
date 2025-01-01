@@ -27,8 +27,9 @@
   "This fn is in place because I may want to do the refactoring where
    the search result isn't any longer just the first item of the vector
    but the only result."
-  []
-  (first (search/search-issues db {})))
+  ([] (q {}))
+  ([opts]
+   (first (search/search-issues db opts))))
 
 (defn- new-item 
   "In place because I want to end up having only new-item, 
@@ -63,10 +64,14 @@
                     (fn []
                       (new-item db {:title "title-2-2" 
                                     :context-ids-set #{(:id item-2)}})))]
-    #_(prn (:id item-1))))
+    [item-1 item-2]))
 
 (deftest search
   (testing "base case"
     (reset-db)
     (create-issue)
-    (is (= "title-2-2" (:title (first (q)))))))
+    (is (= "title-2-2" (:title (first (q))))))
+  (testing "in context"
+    (reset-db)
+    (let [[item-1] (create-issue)]
+      (is (= "title-1-2" (:title (first (q {:selected-context item-1}))))))))
