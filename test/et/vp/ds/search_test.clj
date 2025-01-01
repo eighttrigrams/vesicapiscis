@@ -34,23 +34,29 @@
     (ffirst
      (search/search-issues 
       db 
-      {:q q
-       :selected-context 
-       (assoc-in selected-context [:data :views :current] opts)})))))
+      (if selected-context
+        {:q q
+         :selected-context 
+         (assoc-in selected-context [:data :views :current] opts)}
+        opts))))))
 
 (defn- new-item 
   "In place because I want to end up having only new-item, 
    instead new-item and new-context"
-  [db {:keys [title short-title context-ids-set]
+  [db {:keys [title short-title context-ids-set date archived]
        :or {short-title ""}
        :as opts}]
-  (if context-ids-set
-    (ds/new-issue db title short-title context-ids-set)
-    (let [new-context (ds/new-context db opts)]
-      (when short-title
-        (ds/update-item db (assoc new-context :short_title short-title))))))
+  (let [item
+        (if context-ids-set
+          (ds/new-issue db title short-title context-ids-set)
+          (let [new-context (ds/new-context db opts)]
+            (when short-title
+              (ds/update-item db (assoc new-context :short_title short-title)))))]
+    (if date
+      (ds/update-item db (assoc item :date date :archived archived))
+      item)))
 
-(defn- create-issue []
+(defn- create-issues []
   (with-time
     (fn []
       (let [item-1 (new-item db {:title "title-1" :short-title "abc"})
@@ -76,11 +82,11 @@
 
 (deftest search
   (test-with-reset-db "base case - overview"
-    (create-issue)
+    (create-issues)
     (is (= "title-2-2" (q nil)))
     (is (= "title-2-1" (q nil {:q "abc"}))))
   (test-with-reset-db "in context"
-    (let [[item-1 item-2] (create-issue)]
+    (let [[item-1 item-2] (create-issues)]
       (is (= "title-1-2" (q item-1)))
       (is (= "title-1-1" (q item-1 {:search-mode 1}))) ;; TODO name search modes
       (is (= "title-1-1" (q item-1 {:q "abc"})))
@@ -88,8 +94,24 @@
       (is (= "title-2-1" (q item-2 {:search-mode 1})))
       (is (= "title-2-1" (q item-2 {:q "abc"}))))))
 
+(defn- create-issues-for-events-test [archived]
+  (with-time
+    (fn []
+      (let [item-1 (new-item db {:title "title-1" :date "2025-01-01" :archived archived})
+            item-2 (new-item db {:title "title-2" :date "2025-01-02" :archived archived})
+            item-3 (new-item db {:title "title-3" :date "2025-01-03" :archived archived})
+            item-4 (new-item db {:title "title-4" :date "2025-01-04" :archived archived})]
+        [item-1 item-2 item-3 item-4]))))
+
 (deftest events
-  (test-with-reset-db "base case - overview")
+  (test-with-reset-db 
+   "base case - overview"
+   (create-issues-for-events-test false)
+   (is (= "title-1" (q nil {:events-view 1}))))
+  (test-with-reset-db 
+   "base case - overview - arvhived events"
+   (create-issues-for-events-test true)
+   (is (= "title-4" (q nil {:events-view 2}))));; TODO name events views
   (test-with-reset-db "in context"))
 
 ;; TODO test pin events
