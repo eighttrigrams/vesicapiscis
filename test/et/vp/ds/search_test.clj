@@ -38,21 +38,27 @@
        :as opts}]
   (if context-ids-set
     (ds/new-issue db title short-title context-ids-set)
-    (ds/new-context db opts)))
+    (let [new-context (ds/new-context db opts)]
+      (when short-title
+        (ds/update-item db (assoc new-context :short_title short-title))))))
 
 (defn- create-issue []
   (with-time
     (fn []
-      (let [item-1 (new-item db {:title "title-1"})
-            item-2 (new-item db {:title "title-2"})
-            _item-1-1 (new-item db {:title "title-1-1"
+      (let [item-1 (new-item db {:title "title-1" :short-title "abc"})
+            item-2 (new-item db {:title "title-2" :short-title "cde"})
+            _item-1-1 (new-item db {:title           "title-1-1"
+                                    :short-title     "abc"
                                     :context-ids-set #{(:id item-1)}})
-            _item-1-2 (new-item db {:title "title-1-2" 
+            _item-1-2 (new-item db {:title           "title-1-2" 
+                                    :short-title     "cde"
                                     :context-ids-set #{(:id item-1)}})
-            _item-2-1 (new-item db {:title "title-2-1"
+            _item-2-1 (new-item db {:title           "title-2-1"
+                                    :short-title     "abc"
                                     :context-ids-set #{(:id item-2)}})
-            _item-2-1 (new-item db {:title "title-2-2" 
-                          :context-ids-set #{(:id item-2)}})]
+            _item-2-1 (new-item db {:title           "title-2-2" 
+                                    :short-title     "cde"
+                                    :context-ids-set #{(:id item-2)}})]
         [item-1 item-2]))))
 
 ;; TODO test pin events
@@ -62,9 +68,14 @@
   (testing "base case - overview"
     (reset-db)
     (create-issue)
-    (is (= "title-2-2" (:title (first (q))))))
+    (is (= "title-2-2" (:title (first (q)))))
+    (is (= "title-2-1" (:title (first (q {:q "abc"}))))))
   (testing "in context"
     (reset-db)
     (let [[item-1 item-2] (create-issue)]
       (is (= "title-1-2" (:title (first (q {:selected-context item-1})))))
-      (is (= "title-2-2" (:title (first (q {:selected-context item-2}))))))))
+      (is (= "title-1-1" (:title (first (q {:selected-context item-1
+                                            :q "abc"})))))
+      (is (= "title-2-2" (:title (first (q {:selected-context item-2})))))
+      (is (= "title-2-1" (:title (first (q {:selected-context item-2
+                                            :q "abc"}))))))))
