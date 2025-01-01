@@ -56,33 +56,35 @@
       (ds/update-item db (assoc item :date date :archived archived))
       item)))
 
-(defn- create-issues []
+(defn- create-issues [{:keys [dates?]}]
   (with-time
     (fn []
       (let [item-1    (new-item db {:title       "title-1" 
                                     :short-title "abc"})
             item-2    (new-item db {:title       "title-2" 
                                     :short-title "cde"})
-            _item-1-1 (new-item db {:title           "title-1-1"
-                                    :short-title     "abc"
-                                    :context-ids-set #{(:id item-1)}
-                                    :date            "2025-01-01"
-                                    :archived        false})
-            _item-1-2 (new-item db {:title           "title-1-2" 
-                                    :short-title     "cde"
-                                    :context-ids-set #{(:id item-1)}
-                                    :date            "2025-01-02"
-                                    :archived        false})
+            _item-1-1 (new-item db (merge {:title           "title-1-1"
+                                           :short-title     "abc"
+                                           :context-ids-set #{(:id item-1)}}
+                                          (when dates? ;; TODO remove necessity to do this, instead, control comparison date such that item does not get pinned
+                                            {:date     "2025-01-01"
+                                             :archived false})))
+            _item-1-2 (new-item db (merge {:title           "title-1-2" 
+                                           :short-title     "cde"
+                                           :context-ids-set #{(:id item-1)}}
+                                          (when dates?
+                                            {:date     "2025-01-02"
+                                             :archived false})))
             _item-2-1 (new-item db {:title           "title-2-1"
-                                    :short-title     "abc"
-                                    :context-ids-set #{(:id item-2)}
-                                    :date            "2025-01-01"
-                                    :archived        true})
+                                     :short-title     "abc"
+                                     :context-ids-set #{(:id item-2)}
+                                     :date     "2025-01-01"
+                                     :archived true})
             _item-2-2 (new-item db {:title           "title-2-2" 
-                                    :short-title     "cde"
-                                    :context-ids-set #{(:id item-2)}
-                                    :date            "2025-01-02"
-                                    :archived        true})]
+                                     :short-title     "cde"
+                                     :context-ids-set #{(:id item-2)}
+                                     :date     "2025-01-02" 
+                                     :archived true})]
         [item-1 item-2]))))
 
 (defmacro test-with-reset-db [string & body]
@@ -92,11 +94,11 @@
 
 (deftest search
   (test-with-reset-db "base case - overview"
-    (create-issues)
+    (create-issues {})
     (is (= "title-2-2" (q nil)))
     (is (= "title-2-1" (q nil {:q "abc"}))))
   (test-with-reset-db "in context"
-    (let [[item-1 item-2] (create-issues)]
+    (let [[item-1 item-2] (create-issues {})]
       (is (= "title-1-2" (q item-1)))
       (is (= "title-1-1" (q item-1 {:search-mode 1}))) ;; TODO name search modes
       (is (= "title-1-1" (q item-1 {:q "abc"})))
@@ -107,15 +109,15 @@
 (deftest events
   (test-with-reset-db 
    "base case - overview"
-   (create-issues)
+   (create-issues {:dates? true})
    (is (= "title-1-1" (q nil {:events-view 1}))))
   (test-with-reset-db 
    "base case - overview - arvhived events"
-   (create-issues)
+   (create-issues {:dates? true})
    (is (= "title-2-2" (q nil {:events-view 2}))));; TODO name events views
   (test-with-reset-db 
    "in context"
-   (let [[item-1 item-2] (create-issues)]
+   (let [[item-1 item-2] (create-issues {:dates? true})]
      (is (= "title-1-1" (q item-1 {:events-view 1})))
      (is (= "title-2-2" (q item-2 {:events-view 2}))))))
 

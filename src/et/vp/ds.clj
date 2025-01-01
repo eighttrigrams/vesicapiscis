@@ -165,6 +165,14 @@
       sql/format
       (#(jdbc/execute! db % {:return-keys true}))))
 
+(defn gen-date []
+  (str 
+   "'"
+   (t/format 
+    (t/formatter "YYYY-MM-dd HH:mm:ss") 
+    (t/date-time))
+   "'"))
+
 (defn- update-item' [db {:keys [id title short_title tags data] :as item}]
   (log/info "update-item!")
   (let [old-item      (get-item db item)
@@ -282,14 +290,6 @@
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]}))
     (get-item db context)))
-
-(defn gen-date []
-  (str 
-   "'"
-   (t/format 
-    (t/formatter "YYYY-MM-dd HH:mm:ss") 
-    (t/date-time))
-   "'"))
 
 (defn reprioritize-context [db {:keys [id]}]
   (jdbc/execute! db (sql/format {:update [:issues]
