@@ -5,7 +5,8 @@
             [cambium.core :as log]
             [et.vp.ds.relations :as datastore.relations]
             [et.vp.ds.helpers
-             :refer [un-namespace-keys post-process-base]]))
+             :refer [un-namespace-keys post-process-base]]
+            [tick.core :as t]))
 
 (defn delete-date [db issue-id]
   (jdbc/execute! db
@@ -338,20 +339,29 @@
      (insert-issue-relations! db values)
      (get-item db {:id issue-id}))))
 
+(defn gen-date []
+  (str 
+   "'"
+   (t/format 
+    (t/formatter "YYYY-MM-dd HH:mm:ss") 
+    (t/date-time))
+   "'"))
+
 (defn new-context [db {title :title}]
-  (-> (jdbc/execute-one!
-       db
-       (sql/format {:insert-into [:issues]
-                    :columns     [:inserted_at
-                                  :updated_at
-                                  :updated_at_ctx
-                                  :title
-                                  :is_context]
-                    :values      [[[:raw "NOW()"]
-                                   [:raw "NOW()"]
-                                   [:raw "NOW()"]
-                                   [:inline title]
-                                   true]]})
-       {:return-keys true})
-      un-namespace-keys
-      (dissoc :searchable)))
+  (let [now (gen-date)]
+    (-> (jdbc/execute-one!
+         db
+         (sql/format {:insert-into [:issues]
+                      :columns     [:inserted_at
+                                    :updated_at
+                                    :updated_at_ctx
+                                    :title
+                                    :is_context]
+                      :values      [[[:raw now] ;; before, it was just "NOW()"
+                                     [:raw now]
+                                     [:raw now]
+                                     [:inline title]
+                                     true]]})
+         {:return-keys true})
+        un-namespace-keys
+        (dissoc :searchable))))
