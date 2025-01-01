@@ -63,6 +63,8 @@
 
 ;; TODO test pin events
 
+;; TODO test events
+
 (deftest search
   (testing "base case - overview"
     (reset-db)
@@ -80,3 +82,5 @@
       (is (= "title-2-1" (q {:selected-context (assoc-in item-2 [:data :views :current :search-mode] 1)})))
       (is (= "title-2-1" (q {:selected-context item-2
                               :q "abc"}))))))
+
+;; TODO test intersections
