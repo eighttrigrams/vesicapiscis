@@ -73,5 +73,6 @@
     (is (= "title-2-2" (:title (first (q))))))
   (testing "in context"
     (reset-db)
-    (let [[item-1] (create-issue)]
-      (is (= "title-1-2" (:title (first (q {:selected-context item-1}))))))))
+    (let [[item-1 item-2] (create-issue)]
+      (is (= "title-1-2" (:title (first (q {:selected-context item-1})))))
+      (is (= "title-2-2" (:title (first (q {:selected-context item-2}))))))))
