@@ -26,9 +26,9 @@
   "This fn is in place because I may want to do the refactoring where
    the search result isn't any longer just the first item of the vector
    but the only result."
-  ([] (q {}))
-  ([opts]
-   (:title (ffirst (search/search-issues db opts)))))
+  ([selected-context] (q selected-context {}))
+  ([selected-context opts]
+   (:title (ffirst (search/search-issues db (assoc opts :selected-context selected-context))))))
 
 (defn- new-item 
   "In place because I want to end up having only new-item, 
@@ -69,18 +69,16 @@
   (testing "base case - overview"
     (reset-db)
     (create-issue)
-    (is (= "title-2-2" (q)))
-    (is (= "title-2-1" (q {:q "abc"}))))
+    (is (= "title-2-2" (q nil)))
+    (is (= "title-2-1" (q nil {:q "abc"}))))
   (testing "in context"
     (reset-db)
     (let [[item-1 item-2] (create-issue)]
-      (is (= "title-1-2" (q {:selected-context item-1})))
-      (is (= "title-1-1" (q {:selected-context (assoc-in item-1 [:data :views :current :search-mode] 1)})))
-      (is (= "title-1-1" (q {:selected-context item-1
-                              :q "abc"})))
-      (is (= "title-2-2" (q {:selected-context item-2})))
-      (is (= "title-2-1" (q {:selected-context (assoc-in item-2 [:data :views :current :search-mode] 1)})))
-      (is (= "title-2-1" (q {:selected-context item-2
-                              :q "abc"}))))))
+      (is (= "title-1-2" (q item-1)))
+      (is (= "title-1-1" (q (assoc-in item-1 [:data :views :current :search-mode] 1))))
+      (is (= "title-1-1" (q item-1 {:q "abc"})))
+      (is (= "title-2-2" (q item-2)))
+      (is (= "title-2-1" (q (assoc-in item-2 [:data :views :current :search-mode] 1))))
+      (is (= "title-2-1" (q item-2 {:q "abc"}))))))
 
 ;; TODO test intersections
