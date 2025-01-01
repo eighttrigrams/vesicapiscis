@@ -22,7 +22,19 @@
                     (ds/new-context db {:title "title-1"})))
         _item-2 (with-time "2025-01-01 10:00:01" ;; TODO automate this, that every new item is inserted one second later in the tests
                   (fn []
-                    (ds/new-context db {:title "title-2"})))]
+                    (ds/new-context db {:title "title-2"})))
+        _item-1-1 (with-time "2025-01-01 10:00:02"
+                  (fn []
+                    (ds/new-context db {:title "title-1-1"})))
+        _item-1-2 (with-time "2025-01-01 10:00:03"
+                  (fn []
+                    (ds/new-context db {:title "title-1-2"})))
+        _item-2-1 (with-time "2025-01-01 10:00:04"
+                  (fn []
+                    (ds/new-context db {:title "title-2-1"})))
+        _item-2-1 (with-time "2025-01-01 10:00:05" 
+                  (fn []
+                    (ds/new-context db {:title "title-2-2"})))]
     #_(prn (:id item-1))))
 
 (defn- q
@@ -36,4 +48,4 @@
   (testing "base case"
     (reset-db)
     (create-issue)
-    (is (= "title-2" (:title (first (q)))))))
+    (is (= "title-2-2" (:title (first (q)))))))

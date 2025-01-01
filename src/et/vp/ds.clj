@@ -322,7 +322,8 @@
                               :values      values})))
 
 (defn new-issue 
-  ([db title short-title context-ids-set] (new-issue db title short-title context-ids-set {}))
+  ([db title short-title context-ids-set]
+   (new-issue db title short-title context-ids-set {}))
   ([db 
     title
     short-title
