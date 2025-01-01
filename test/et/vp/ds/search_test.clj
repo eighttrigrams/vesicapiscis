@@ -66,8 +66,9 @@
                                     :context-ids-set #{(:id item-2)}})))]
     [item-1 item-2]))
 
+;; TODO add cases with flipped search order
 (deftest search
-  (testing "base case"
+  (testing "base case - overview"
     (reset-db)
     (create-issue)
     (is (= "title-2-2" (:title (first (q))))))
