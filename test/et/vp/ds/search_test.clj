@@ -69,24 +69,29 @@
                                     :context-ids-set #{(:id item-2)}})]
         [item-1 item-2]))))
 
-;; TODO test pin events
-
-;; TODO test events
+(defmacro test-with-reset-db [string & body]
+  `(testing ~string
+     (reset-db)
+     ~@body))
 
 (deftest search
-  (testing "base case - overview"
-    (reset-db)
+  (test-with-reset-db "base case - overview"
     (create-issue)
     (is (= "title-2-2" (q nil)))
     (is (= "title-2-1" (q nil {:q "abc"}))))
-  (testing "in context"
-    (reset-db)
+  (test-with-reset-db "in context"
     (let [[item-1 item-2] (create-issue)]
       (is (= "title-1-2" (q item-1)))
-      (is (= "title-1-1" (q item-1 {:search-mode 1})))
+      (is (= "title-1-1" (q item-1 {:search-mode 1}))) ;; TODO name search modes
       (is (= "title-1-1" (q item-1 {:q "abc"})))
       (is (= "title-2-2" (q item-2)))
       (is (= "title-2-1" (q item-2 {:search-mode 1})))
       (is (= "title-2-1" (q item-2 {:q "abc"}))))))
+
+(deftest events
+  (test-with-reset-db "base case - overview")
+  (test-with-reset-db "in context"))
+
+;; TODO test pin events
 
 ;; TODO test intersections
