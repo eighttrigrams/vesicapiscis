@@ -65,6 +65,8 @@
                                     :context-ids-set #{(:id item-2)}})))]
     [item-1 item-2]))
 
+;; TODO test pin events
+
 ;; TODO add cases with flipped search order
 (deftest search
   (testing "base case - overview"
