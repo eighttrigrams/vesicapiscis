@@ -12,8 +12,15 @@
   (jdbc/execute-one! db ["delete from issue_issue"])
   (jdbc/execute-one! db ["delete from issues"]))
 
-(defn with-time [time body]
-  (with-redefs [ds/gen-date (fn [] (str "'" time "'"))]
+(def time-fn 
+  (let [seconds (atom 0)]
+    (fn [] 
+      (let [time (str "'2025-01-01 10:00:" (format "%02d" @seconds) "'")]
+        (swap! seconds inc)
+        time))))
+
+(defn with-time [body]
+  (with-redefs [ds/gen-date time-fn]
     (body)))
 
 (defn- q
@@ -34,28 +41,28 @@
     (ds/new-context db opts)))
 
 (defn- create-issue []
-  (let [item-1 (with-time "2025-01-01 10:00:00"
-                  (fn []
-                    (new-item db {:title "title-1"})))
-        item-2 (with-time "2025-01-01 10:00:01" ;; TODO automate this, that every new item is inserted one second later in the tests
+  (let [item-1 (with-time
+                 (fn []
+                   (new-item db {:title "title-1"})))
+        item-2 (with-time
                   (fn []
                     (new-item db {:title "title-2"})))
-        _item-1-1 (with-time "2025-01-01 10:00:02"
-                  (fn []
-                    (new-item db {:title "title-1-1"
-                                   :context-ids-set #{(:id item-1)}})))
-        _item-1-2 (with-time "2025-01-01 10:00:03"
-                  (fn []
-                    (new-item db {:title "title-1-2" 
-                                   :context-ids-set #{(:id item-1)}})))
-        _item-2-1 (with-time "2025-01-01 10:00:04"
-                  (fn []
-                    (new-item db {:title "title-2-1"
-                                   :context-ids-set #{(:id item-2)}})))
-        _item-2-1 (with-time "2025-01-01 10:00:05" 
-                  (fn []
-                    (new-item db {:title "title-2-2" 
-                                   :context-ids-set #{(:id item-2)}})))]
+        _item-1-1 (with-time
+                    (fn []
+                      (new-item db {:title "title-1-1"
+                                    :context-ids-set #{(:id item-1)}})))
+        _item-1-2 (with-time
+                    (fn []
+                      (new-item db {:title "title-1-2" 
+                                    :context-ids-set #{(:id item-1)}})))
+        _item-2-1 (with-time
+                    (fn []
+                      (new-item db {:title "title-2-1"
+                                    :context-ids-set #{(:id item-2)}})))
+        _item-2-1 (with-time
+                    (fn []
+                      (new-item db {:title "title-2-2" 
+                                    :context-ids-set #{(:id item-2)}})))]
     #_(prn (:id item-1))))
 
 (deftest search
