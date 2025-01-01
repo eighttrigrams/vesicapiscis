@@ -59,20 +59,30 @@
 (defn- create-issues []
   (with-time
     (fn []
-      (let [item-1 (new-item db {:title "title-1" :short-title "abc"})
-            item-2 (new-item db {:title "title-2" :short-title "cde"})
+      (let [item-1    (new-item db {:title       "title-1" 
+                                    :short-title "abc"})
+            item-2    (new-item db {:title       "title-2" 
+                                    :short-title "cde"})
             _item-1-1 (new-item db {:title           "title-1-1"
                                     :short-title     "abc"
-                                    :context-ids-set #{(:id item-1)}})
+                                    :context-ids-set #{(:id item-1)}
+                                    :date            "2025-01-01"
+                                    :archived        false})
             _item-1-2 (new-item db {:title           "title-1-2" 
                                     :short-title     "cde"
-                                    :context-ids-set #{(:id item-1)}})
+                                    :context-ids-set #{(:id item-1)}
+                                    :date            "2025-01-02"
+                                    :archived        false})
             _item-2-1 (new-item db {:title           "title-2-1"
                                     :short-title     "abc"
-                                    :context-ids-set #{(:id item-2)}})
-            _item-2-1 (new-item db {:title           "title-2-2" 
+                                    :context-ids-set #{(:id item-2)}
+                                    :date            "2025-01-01"
+                                    :archived        true})
+            _item-2-2 (new-item db {:title           "title-2-2" 
                                     :short-title     "cde"
-                                    :context-ids-set #{(:id item-2)}})]
+                                    :context-ids-set #{(:id item-2)}
+                                    :date            "2025-01-02"
+                                    :archived        true})]
         [item-1 item-2]))))
 
 (defmacro test-with-reset-db [string & body]
@@ -94,25 +104,20 @@
       (is (= "title-2-1" (q item-2 {:search-mode 1})))
       (is (= "title-2-1" (q item-2 {:q "abc"}))))))
 
-(defn- create-issues-for-events-test [archived]
-  (with-time
-    (fn []
-      (let [item-1 (new-item db {:title "title-1" :date "2025-01-01" :archived archived})
-            item-2 (new-item db {:title "title-2" :date "2025-01-02" :archived archived})
-            item-3 (new-item db {:title "title-3" :date "2025-01-03" :archived archived})
-            item-4 (new-item db {:title "title-4" :date "2025-01-04" :archived archived})]
-        [item-1 item-2 item-3 item-4]))))
-
 (deftest events
   (test-with-reset-db 
    "base case - overview"
-   (create-issues-for-events-test false)
-   (is (= "title-1" (q nil {:events-view 1}))))
+   (create-issues)
+   (is (= "title-1-1" (q nil {:events-view 1}))))
   (test-with-reset-db 
    "base case - overview - arvhived events"
-   (create-issues-for-events-test true)
-   (is (= "title-4" (q nil {:events-view 2}))));; TODO name events views
-  (test-with-reset-db "in context"))
+   (create-issues)
+   (is (= "title-2-2" (q nil {:events-view 2}))));; TODO name events views
+  (test-with-reset-db 
+   "in context"
+   (let [[item-1 item-2] (create-issues)]
+     (is (= "title-1-1" (q item-1 {:events-view 1})))
+     (is (= "title-2-2" (q item-2 {:events-view 2}))))))
 
 ;; TODO test pin events
 
