@@ -283,6 +283,14 @@
                                        :where  [:= :id [:inline id]]}))
     (get-item db context)))
 
+(defn gen-date []
+  (str 
+   "'"
+   (t/format 
+    (t/formatter "YYYY-MM-dd HH:mm:ss") 
+    (t/date-time))
+   "'"))
+
 (defn reprioritize-context [db {:keys [id]}]
   (jdbc/execute! db (sql/format {:update [:issues]
                                  :set {:updated_at_ctx [:raw "NOW()"]}
@@ -294,26 +302,27 @@
                                  :where [:= :id [:inline id]]})))
 
 (defn- create-new-issue! [db title short_title suppress-digit-check?]
-  (:issues/id (jdbc/execute-one!
-               db
-               (sql/format {:insert-into [:issues]
-                            :columns     [:inserted_at
-                                          :updated_at
-                                          :updated_at_ctx
-                                          :title
-                                          :short_title]
-                            :values      [[[:raw "NOW()"]
-                                           [:raw "NOW()"]
-                                           [:raw "NOW()"]
-                                           title
-                                           (if (and (not suppress-digit-check?)
-                                                    (boolean (re-find #"\d" short_title)))
-                                             (do 
-                                               (log/error (str "Can't insert short_title due to it containing digit: " short_title))
-                                               "")
-                                             short_title)]]})
+  (let [now (gen-date)]
+    (:issues/id (jdbc/execute-one!
+                 db
+                 (sql/format {:insert-into [:issues]
+                              :columns     [:inserted_at
+                                            :updated_at
+                                            :updated_at_ctx
+                                            :title
+                                            :short_title]
+                              :values      [[[:raw now]
+                                             [:raw now]
+                                             [:raw now]
+                                             title
+                                             (if (and (not suppress-digit-check?)
+                                                      (boolean (re-find #"\d" short_title)))
+                                               (do 
+                                                 (log/error (str "Can't insert short_title due to it containing digit: " short_title))
+                                                 "")
+                                               short_title)]]})
 
-               {:return-keys true})))
+                 {:return-keys true}))))
 
 (defn- insert-issue-relations! [db values]
   (jdbc/execute! db
@@ -339,14 +348,6 @@
                              context-ids-set)))]
      (insert-issue-relations! db values)
      (get-item db {:id issue-id}))))
-
-(defn gen-date []
-  (str 
-   "'"
-   (t/format 
-    (t/formatter "YYYY-MM-dd HH:mm:ss") 
-    (t/date-time))
-   "'"))
 
 (defn new-context [db {title :title}]
   (let [now (gen-date)]
