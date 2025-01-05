@@ -7,3 +7,5 @@
 ;; TODO desired interface db selected-context search-opts
 (defn search-issues [db opts]
   (old-search/search-issues db opts))
+
+(defn search-contexts [db opts] (old-search/search-contexts db opts))
