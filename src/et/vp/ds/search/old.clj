@@ -6,7 +6,8 @@
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [et.vp.ds.helpers
-             :refer [un-namespace-keys post-process-base]]))
+             :refer [un-namespace-keys post-process-base]
+             :as helpers]))
 
 (defn get-title
   [db {:keys [id]}] 
@@ -128,18 +129,6 @@
     ;; TODO i could do the sorting and limiting uniformly here
    (wrap-order-and-limit selected-context link-issue)))
 
-(defn do-fetch-ids' 
-  "This should later be a replacement for do-fetch-ids"
-  [{:keys [q _link-issue]
-    :or   {q ""}} 
-   _selected-context
-   _search-mode
-   _events-view
-   _issue-ids-to-remove
-   _join-ids
-   _and-query?]
-  )
-
 (defmacro sectime
   [what expr]
   `(let [start# (. System (currentTimeMillis))
@@ -204,15 +193,15 @@
 
 (defn- expired-filter [issue]
   (and
-   (not (:archived issue))
    (:date issue)
-   (= 1 (.compareTo (java.time.Instant/now)
+   (not (:archived issue))
+   (= 1 (.compareTo (helpers/instant-now)
                     (java.time.Instant/parse (str (:date issue) "T05:45:00Z"))))))
 
-;; TODO extract common pattern (top,bottom) with #re-order
 (defn- pin-events [issues]
   (let [top (filter expired-filter issues)
-        bottom (remove  expired-filter issues)]
+        ;; TODO don't do remove if top is empty
+        bottom (remove expired-filter issues)]
     (concat top bottom)))
 
 ;; TODO most of this, when not inverted and not unassigned selected, can be done as part of the query in do-fetch-ids' 
@@ -251,6 +240,9 @@
         events-view
         global-events-view) 0))
 
+(defn today-date []
+  (helpers/gen-date))
+
 (defn- do-fetch-urgent-issues-ids [db link-issue events-view selected-context q]
   (let [urgent-events-query
         (sql/format
@@ -262,7 +254,7 @@
                      [:not= :issues.archived true]
                      [:< 
                       :date
-                      [:raw "NOW()"]]]})]
+                      [:raw (today-date)]]]})]
     (if (or link-issue 
             (not= 0 events-view)
             selected-context

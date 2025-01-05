@@ -5,8 +5,8 @@
             [cambium.core :as log]
             [et.vp.ds.relations :as datastore.relations]
             [et.vp.ds.helpers
-             :refer [un-namespace-keys post-process-base]]
-            [tick.core :as t]))
+             :refer [un-namespace-keys post-process-base]
+             :as helpers]))
 
 (defn delete-date [db issue-id]
   (jdbc/execute! db
@@ -165,14 +165,6 @@
       sql/format
       (#(jdbc/execute! db % {:return-keys true}))))
 
-(defn gen-date []
-  (str 
-   "'"
-   (t/format 
-    (t/formatter "YYYY-MM-dd HH:mm:ss") 
-    (t/date-time))
-   "'"))
-
 (defn- update-item' [db {:keys [id title short_title tags data] :as item}]
   (log/info "update-item!")
   (let [old-item      (get-item db item)
@@ -302,7 +294,7 @@
                                  :where [:= :id [:inline id]]})))
 
 (defn- create-new-issue! [db title short_title suppress-digit-check?]
-  (let [now (gen-date)]
+  (let [now (helpers/gen-date)]
     (:issues/id (jdbc/execute-one!
                  db
                  (sql/format {:insert-into [:issues]
@@ -350,7 +342,7 @@
      (get-item db {:id issue-id}))))
 
 (defn new-context [db {title :title}]
-  (let [now (gen-date)]
+  (let [now (helpers/gen-date)]
     (-> (jdbc/execute-one!
          db
          (sql/format {:insert-into [:issues]
