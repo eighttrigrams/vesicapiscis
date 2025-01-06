@@ -155,4 +155,6 @@
   (test-with-reset-db-and-time "base case - overview"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
       (is (= "title-4" (q item-1 {}))) ;; sanity check
-      (is (= "title-3" (q item-1 {:selected-secondary-contexts (list (:id item-2))}))))))
+      (is (= "title-3" (q item-1 {:selected-secondary-contexts (list (:id item-2))})))
+      (is (= "title-4" (q item-1 {:selected-secondary-contexts (list (:id item-2))
+                                  :secondary-contexts-inverted true}))))))
