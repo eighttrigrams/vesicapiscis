@@ -141,4 +141,18 @@
    (let [[item-1] (create-issues {:events-expired? true})]
      (is (= "title-1-2" (q item-1 {}))))))
 
-;; TODO test intersections
+(defn- create-issues-for-intersection-tests [{}]
+  (let [item-1    (new-item db {:title       "title-1"})
+        item-2    (new-item db {:title       "title-2"})
+        _item-1-1 (new-item db {:title           "title-3"
+                                :context-ids-set #{(:id item-1)
+                                                   (:id item-2)}})
+        _item-1-2 (new-item db {:title           "title-4"
+                                :context-ids-set #{(:id item-1)}})]
+    [item-1 item-2]))
+
+(deftest intersections
+  (test-with-reset-db-and-time "base case - overview"
+    (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
+      (is (= "title-4" (q item-1 {}))) ;; sanity check
+      (is (= "title-3" (q item-1 {:selected-secondary-contexts (list (:id item-2))}))))))
