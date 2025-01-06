@@ -33,18 +33,22 @@
    the search result isn't any longer just the first item of the vector
    but the only result."
   ([selected-context] (q selected-context {}))
-  ([selected-context {:keys [q]
+  ([selected-context {:keys [q search-mode]
                       :or {q ""}
                       :as opts}]
-   (:title 
-    (ffirst
-     (search/search-issues 
-      db 
-      (if selected-context
-        {:q q
-         :selected-context 
-         (assoc-in selected-context [:data :views :current] opts)}
-        opts))))))
+   (let [search-mode (case search-mode
+                       :last-touched-first 1
+                       0)
+         opts (assoc opts :search-mode search-mode)]
+     (:title 
+      (ffirst
+       (search/search-issues 
+        db 
+        (if selected-context
+          {:q q
+           :selected-context 
+           (assoc-in selected-context [:data :views :current] opts)}
+          opts)))))))
 
 (defn- new-item 
   "In place because I want to end up having only new-item, 
@@ -107,10 +111,10 @@
   (test-with-reset-db-and-time "in context"
     (let [[item-1 item-2] (create-issues {})]
       (is (= "title-1-2" (q item-1)))
-      (is (= "title-1-1" (q item-1 {:search-mode 1}))) ;; TODO name search modes
+      (is (= "title-1-1" (q item-1 {:search-mode :last-touched-first})))
       (is (= "title-1-1" (q item-1 {:q "abc"})))
       (is (= "title-2-2" (q item-2)))
-      (is (= "title-2-1" (q item-2 {:search-mode 1})))
+      (is (= "title-2-1" (q item-2 {:search-mode :last-touched-first})))
       (is (= "title-2-1" (q item-2 {:q "abc"}))))))
 
 (deftest events
