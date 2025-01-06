@@ -130,7 +130,7 @@
   (test-with-reset-db-and-time 
    "base case - overview - arvhived events"
    (create-issues {:dates? true})
-   (is (= "title-2-2" (q nil {:search-mode :past-events}))));; TODO name events views
+   (is (= "title-2-2" (q nil {:search-mode :past-events}))))
   (test-with-reset-db-and-time 
    "in context"
    (let [[item-1 item-2] (create-issues {})]
