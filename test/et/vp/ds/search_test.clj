@@ -62,7 +62,7 @@
       (ds/update-item db (assoc item :date date :archived archived))
       item)))
 
-(defn- create-issues [{}]
+(defn- create-issues [{:keys [events-expired?]}]
   (let [item-1    (new-item db {:title       "title-1" 
                                 :short-title "abc"})
         item-2    (new-item db {:title       "title-2" 
@@ -70,12 +70,16 @@
         _item-1-1 (new-item db {:title           "title-1-1"
                                 :short-title     "abc"
                                 :context-ids-set #{(:id item-1)}
-                                :date            "2025-01-03"
+                                :date            (if-not events-expired? 
+                                                   "2025-01-03"
+                                                   "2025-01-01")
                                 :archived        false})
         _item-1-2 (new-item db {:title           "title-1-2" 
                                 :short-title     "cde"
                                 :context-ids-set #{(:id item-1)}
-                                :date            "2025-01-04"
+                                :date            (if-not events-expired? 
+                                                   "2025-01-04"
+                                                   "2024-12-31")
                                 :archived        false})
         _item-2-1 (new-item db {:title           "title-2-1"
                                 :short-title     "abc"
@@ -112,7 +116,7 @@
 (deftest events
   (test-with-reset-db-and-time 
    "base case - overview"
-   (create-issues {:dates? true})
+   (create-issues {})
    (is (= "title-1-1" (q nil {:events-view 1}))))
   (test-with-reset-db-and-time 
    "base case - overview - arvhived events"
@@ -120,10 +124,12 @@
    (is (= "title-2-2" (q nil {:events-view 2}))));; TODO name events views
   (test-with-reset-db-and-time 
    "in context"
-   (let [[item-1 item-2] (create-issues {:dates? true})]
+   (let [[item-1 item-2] (create-issues {})]
      (is (= "title-1-1" (q item-1 {:events-view 1})))
-     (is (= "title-2-2" (q item-2 {:events-view 2}))))))
-
-;; TODO test pin events
+     (is (= "title-2-2" (q item-2 {:events-view 2})))))
+  (test-with-reset-db-and-time 
+   "pin events"
+   (let [[item-1] (create-issues {:events-expired? true})]
+     (is (= "title-1-2" (q item-1 {}))))))
 
 ;; TODO test intersections
