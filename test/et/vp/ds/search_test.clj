@@ -144,11 +144,11 @@
 (defn- create-issues-for-intersection-tests [{}]
   (let [item-1    (new-item db {:title       "title-1"})
         item-2    (new-item db {:title       "title-2"})
-        _item-1-1 (new-item db {:title           "title-3"
-                                :context-ids-set #{(:id item-1)
-                                                   (:id item-2)}})
-        _item-1-2 (new-item db {:title           "title-4"
-                                :context-ids-set #{(:id item-1)}})]
+        _item-3 (new-item db {:title           "title-3" 
+                              :context-ids-set #{(:id item-1) 
+                                                 (:id item-2)}})
+        _item-4 (new-item db {:title           "title-4"
+                              :context-ids-set #{(:id item-1)}})]
     [item-1 item-2]))
 
 (deftest intersections
@@ -157,4 +157,6 @@
       (is (= "title-4" (q item-1 {}))) ;; sanity check
       (is (= "title-3" (q item-1 {:selected-secondary-contexts (list (:id item-2))})))
       (is (= "title-4" (q item-1 {:selected-secondary-contexts (list (:id item-2))
-                                  :secondary-contexts-inverted true}))))))
+                                  :secondary-contexts-inverted true})))
+      ;; TODO fix this; this depends on data.contexts to be set properly
+      #_(is (= "title-4" (q item-1 {:secondary-contexts-unassigned-selected true}))))))
