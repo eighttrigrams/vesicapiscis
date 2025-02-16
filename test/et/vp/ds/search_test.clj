@@ -4,7 +4,6 @@
             [next.jdbc :as jdbc]
             [et.vp.ds :as ds]
             [et.vp.ds.search :as search]
-            [et.vp.ds.search.old :as search.old]
             [et.vp.ds.helpers :as helpers]))
 
 (defonce db (edn/read-string (slurp "./test_config.edn")))
@@ -22,7 +21,7 @@
 
 (defmacro with-time [& body]
   `(with-redefs [helpers/gen-date time-fn
-                 search.old/today-date (constantly "'2025-01-02'")
+                 search/today-date (constantly "'2025-01-02'")
                  helpers/instant-now
                  (fn []
                    (java.time.Instant/parse "2025-01-02T05:45:00Z"))]
