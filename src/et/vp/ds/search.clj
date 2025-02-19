@@ -217,12 +217,12 @@
                        secondary-contexts-but-no-modifiers-selected?)
         issues-ids (do-query db 
                              (search.new/do-fetch-ids'' state 
-                                             selected-context 
-                                             search-mode 
-                                             events-view 
-                                             urgent-issues-ids-simplified 
-                                             join-ids
-                                             and-query?))]
+                                                        urgent-issues-ids-simplified 
+                                                        {:selected-context selected-context
+                                                         :join-ids join-ids
+                                                         :and-query? and-query?
+                                                         :search-mode search-mode
+                                                         :events-view events-view}))]
     #_(prn "issues-ids" (map :issues/id issues-ids))
     (seq (concat urgent-issues-ids issues-ids))))
 
@@ -240,14 +240,10 @@
       (remove #(or ((set (keys (:contexts (:data %)))) (:id selected-context))
                    (= (:id %) (:id selected-context))) issues))))
 
-(defn- sort-for-events-view 
-  [issues events-view]
+#_(defn- sort-for-events-view 
+  [issues _events-view]
   (->> issues 
-       (sort-by :date)
-       (filter :date)
-       (#(if (= 2 events-view)
-           (reverse %)
-           %))))
+       (filter :date)))
 
 (defn- sort-for-regular-view 
   [issues 
@@ -265,7 +261,8 @@
   (let [events-view (get-events-view state)
         in-events-view? (not= 0 events-view)]
     (if in-events-view? 
-      (sort-for-events-view issues events-view)
+      issues
+      #_(sort-for-events-view issues events-view)
       (sort-for-regular-view issues state))))
 
 (defn- search-issues'
