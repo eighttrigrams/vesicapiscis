@@ -20,7 +20,7 @@
                                                          search-mode
                                                          events-view
                                                          q]}]
-  (prn "query" query)
+  #_(prn "query" query)
   (merge 
    {:select (if selected-context 
               (vec (concat search.core/select [:collections.annotation]))
@@ -49,18 +49,13 @@
                                                    :where [:in [:issues.id [10 20]]]} 
                                                   {})))
 
-(defn do-fetch-ids'' ;; TODO rename, it doesn't return only the ids
-  [{:keys [q link-issue]
-    :or   {q ""}} 
-   selected-context
-   search-mode
-   events-view
-   issue-ids-to-remove
-   join-ids
-   and-query?]
-  #_(prn "and-query?" and-query? (some? selected-context) join-ids)
-  (->
-   (merge
+(defn- base-query 
+  [issue-ids-to-remove
+   {:keys [join-ids
+           events-view
+           and-query?
+           q]}]
+  (merge
     {:select :issues.id
      :from   [:issues]
      :where  [:and [:and
@@ -72,12 +67,17 @@
     (when and-query?
       {:join     [:collections [:= :issues.id :collections.item_id]]
        :group-by :issues.id
-       :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]}))
-   (wrap-given-issues-query-with-limit {:selected-context selected-context
-                                        :join-ids         join-ids
-                                        :link-issue       link-issue
-                                        :search-mode      search-mode
-                                        :events-view      events-view
-                                        :q                q})
-   (sql/format)
-   #_(#(do (prn "#q" %) %))))
+       :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})))
+
+(defn do-fetch-ids'' ;; TODO rename, it doesn't return only the ids
+  [{:keys [q link-issue]
+    :or   {q ""}} 
+   issue-ids-to-remove
+   {:as opts}]
+  #_(prn "and-query?" and-query? (some? selected-context) join-ids)
+  (let [opts (assoc opts :q q :link-issue link-issue)]
+    (->
+     (base-query issue-ids-to-remove opts)
+     (wrap-given-issues-query-with-limit opts)
+     (sql/format)
+     #_(#(do (prn "#q" %) %)))))

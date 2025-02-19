@@ -216,13 +216,15 @@
         and-query? (or (and selected-context (= :context link-issue)) 
                        secondary-contexts-but-no-modifiers-selected?)
         issues-ids (do-query db 
-                             (search.new/do-fetch-ids'' state 
-                                             selected-context 
-                                             search-mode 
-                                             events-view 
+                             (search.new/do-fetch-ids'' 
+                                             state 
                                              urgent-issues-ids-simplified 
-                                             join-ids
-                                             and-query?))]
+                                             {:selected-context selected-context
+                                              :join-ids         join-ids
+                                              :link-issue       link-issue
+                                              :search-mode      search-mode
+                                              :events-view      events-view
+                                              :and-query?       and-query?}))]
     #_(prn "issues-ids" (map :issues/id issues-ids))
     (seq (concat urgent-issues-ids issues-ids))))
 
