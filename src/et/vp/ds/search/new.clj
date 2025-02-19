@@ -14,22 +14,30 @@
      [:<> :issues.date nil]
      [:not= :issues.archived [:inline (= 1 events-view)]]]))
 
-(defn- wrap-given-issues-query-with-limit [query {:keys [selected-context
-                                                         join-ids
-                                                         link-issue
-                                                         search-mode
-                                                         events-view
-                                                         q]}]
+(defn- wrap-given-issues-query-with-limit
+  [base-query
+   issue-ids-to-remove
+   {:keys [selected-context
+           join-ids
+           link-issue
+           search-mode
+           events-view
+           q]}]
   #_(prn "query" query)
   (merge 
    {:select (if selected-context 
               (vec (concat search.core/select [:collections.annotation]))
               search.core/select)
     :from   :issues
-    :where  [:and [:in :issues.id query]
-                  (if join-ids 
-                    [:= :collections.container_id [:raw (:id selected-context)]]
-                    true)]}
+    :where  [:and 
+             [:in :issues.id base-query]
+             (when issue-ids-to-remove
+                [:not [:in :issues.id [:inline issue-ids-to-remove]]])
+             (get-search-clause q)
+             (get-events-exist-clause events-view)
+             (if join-ids 
+               [:= :collections.container_id [:raw (:id selected-context)]]
+               true)]}
    {:order-by [(if (= 0 events-view)
                  [:issues.updated_at (if (= 1 search-mode)  
                                        :asc
@@ -52,20 +60,12 @@
                                                   {})))
 
 (defn- base-query 
-  [issue-ids-to-remove
-   {:keys [join-ids
-           events-view
-           and-query?
-           q]}]
+  [{:keys [join-ids
+           and-query?]}]
   (merge
     {:select :issues.id
      :from   [:issues]
-     :where  [:and [:and
-                    (get-events-exist-clause events-view)
-                    (when join-ids [:in :collections.container_id [:inline join-ids]])
-                    (get-search-clause q)]
-              (when issue-ids-to-remove
-                [:not [:in :issues.id [:inline issue-ids-to-remove]]])]}
+     :where  [:and (when join-ids [:in :collections.container_id [:inline join-ids]])]}
     (when and-query?
       {:join     [:collections [:= :issues.id :collections.item_id]]
        :group-by :issues.id
@@ -79,7 +79,7 @@
   #_(prn "and-query?" and-query? (some? selected-context) join-ids)
   (let [opts (assoc opts :q q :link-issue link-issue)]
     (->
-     (base-query issue-ids-to-remove opts)
-     (wrap-given-issues-query-with-limit opts)
+     (base-query opts)
+     (wrap-given-issues-query-with-limit issue-ids-to-remove opts)
      (sql/format)
      #_(#(do (prn "#q" %) %)))))
