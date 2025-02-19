@@ -4,7 +4,8 @@
             [next.jdbc :as jdbc]
             [et.vp.ds :as ds]
             [et.vp.ds.search :as search]
-            [et.vp.ds.helpers :as helpers]))
+            [et.vp.ds.helpers :as helpers]
+            [et.vp.ds.relations :as relations]))
 
 (defonce db (edn/read-string (slurp "./test_config.edn")))
 
@@ -143,11 +144,17 @@
 (defn- create-issues-for-intersection-tests [{}]
   (let [item-1    (new-item db {:title       "title-1"})
         item-2    (new-item db {:title       "title-2"})
-        _item-3 (new-item db {:title           "title-3" 
+        item-3 (new-item db {:title           "title-3" 
                               :context-ids-set #{(:id item-1) 
                                                  (:id item-2)}})
         _item-4 (new-item db {:title           "title-4"
                               :context-ids-set #{(:id item-1)}})]
+    ;; the test should work with and without this line
+    #_(relations/set-the-containers-of-item! db 
+                                           item-3
+                                           {(:id item-1) {:annotation "a"}
+                                            (:id item-2) {:annotation nil}}
+                                           false)
     [item-1 item-2]))
 
 (deftest intersections
