@@ -103,6 +103,8 @@
                                                     [:inline show-badge?]]]})))))
 
 (defn set-the-containers-of-item! 
+  "@param containers - map {:container-id {:annotation \"annotation\"
+                                           :show-badge? true|false}}"
   [db item containers is_context]
   (if (or is_context
           (seq (keys containers)))
