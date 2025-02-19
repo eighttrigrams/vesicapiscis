@@ -223,6 +223,7 @@
                                              urgent-issues-ids-simplified 
                                              join-ids
                                              and-query?))]
+    #_(prn "issues-ids" (map :issues/id issues-ids))
     (seq (concat urgent-issues-ids issues-ids))))
 
 (defn- filter-issues
