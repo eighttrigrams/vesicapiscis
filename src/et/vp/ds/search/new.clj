@@ -40,8 +40,7 @@
    (when (or (and (= "" q)
                   (not selected-context)
                   (= 0 events-view))
-             #_(and selected-context link-issue?)
-             link-issue?)
+             (and selected-context link-issue?))
      {:limit 500})
    (when join-ids
      {:join [:collections [:= :issues.id :collections.item_id]]})))
