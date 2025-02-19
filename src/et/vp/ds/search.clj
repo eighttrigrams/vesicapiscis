@@ -92,13 +92,6 @@
         (log/error (str "error in search/search-contexts: " e " - param was: " q))
         (throw e)))))
 
-(defn- re-order [search-mode issues]
-  (if (= 2 search-mode)
-    (sort-by #(:short_title_ints %)
-             (filter #(> (:short_title_ints %) 0) issues))
-    (reverse (sort-by #(:short_title_ints %)
-                                (filter #(> (:short_title_ints %) 0) issues)))))
-
 (defn- expired-filter [issue]
   (and
    (:date issue)
@@ -235,6 +228,13 @@
     (remove #(or ((set (keys (:contexts (:data %)))) (:id selected-context))
                  (= (:id %) (:id selected-context))) issues)
     issues))
+
+(defn- re-order [search-mode issues]
+  (if (= 2 search-mode)
+    (sort-by #(:short_title_ints %)
+             (filter #(> (:short_title_ints %) 0) issues))
+    (reverse (sort-by #(:short_title_ints %)
+                                (filter #(> (:short_title_ints %) 0) issues)))))
 
 (defn- sort-for-regular-view 
   [issues 
