@@ -16,11 +16,11 @@
 
 (defn- wrap-given-issues-query-with-limit [query {:keys [selected-context
                                                          join-ids
-                                                         link-issue?
+                                                         link-issue
                                                          search-mode
                                                          events-view
                                                          q]}]
-  #_(prn "query" query)
+  (prn "query" query)
   (merge 
    {:select (if selected-context 
               (vec (concat search.core/select [:collections.annotation]))
@@ -30,39 +30,18 @@
                   (if join-ids 
                     [:= :collections.container_id [:raw (:id selected-context)]]
                     true)]}
-   {:order-by [(if (= 0 events-view)
-                 [:issues.updated_at (if (= 1 search-mode)  
-                                       :asc
-                                       :desc)]
-                 [:issues.date (if (= 1 events-view)
-                                 :asc
-                                 :desc)])]}
+   {:order-by [[:issues.updated_at (if (and selected-context link-issue) 
+                                     :desc
+                                     (if (= 1 search-mode)
+                                       :asc 
+                                       :desc))]]}
    (when (or (and (= "" q)
                   (not selected-context)
                   (= 0 events-view))
-             (and selected-context link-issue?))
+             (and selected-context link-issue))
      {:limit 500})
    (when join-ids
      {:join [:collections [:= :issues.id :collections.item_id]]})))
-
-(defn- base-query 
-  [q issue-ids-to-remove
-   {:keys [events-view
-           join-ids
-           and-query?]}]
-  (merge
-   {:select :issues.id
-    :from   [:issues]
-    :where  [:and [:and
-                   (get-events-exist-clause events-view)
-                   (when join-ids [:in :collections.container_id [:inline join-ids]])
-                   (get-search-clause q)]
-             (when issue-ids-to-remove
-               [:not [:in :issues.id [:inline issue-ids-to-remove]]])]}
-   (when and-query?
-     {:join     [:collections [:= :issues.id :collections.item_id]]
-      :group-by :issues.id
-      :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})))
 
 (comment
   (sql/format (wrap-given-issues-query-with-limit {:select :ids 
@@ -73,11 +52,32 @@
 (defn do-fetch-ids'' ;; TODO rename, it doesn't return only the ids
   [{:keys [q link-issue]
     :or   {q ""}} 
+   selected-context
+   search-mode
+   events-view
    issue-ids-to-remove
-   opts]
+   join-ids
+   and-query?]
   #_(prn "and-query?" and-query? (some? selected-context) join-ids)
   (->
-   (base-query q issue-ids-to-remove opts)
-   (wrap-given-issues-query-with-limit (assoc opts :link-issue? link-issue))
+   (merge
+    {:select :issues.id
+     :from   [:issues]
+     :where  [:and [:and
+                    (get-events-exist-clause events-view)
+                    (when join-ids [:in :collections.container_id [:inline join-ids]])
+                    (get-search-clause q)]
+              (when issue-ids-to-remove
+                [:not [:in :issues.id [:inline issue-ids-to-remove]]])]}
+    (when and-query?
+      {:join     [:collections [:= :issues.id :collections.item_id]]
+       :group-by :issues.id
+       :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]}))
+   (wrap-given-issues-query-with-limit {:selected-context selected-context
+                                        :join-ids         join-ids
+                                        :link-issue       link-issue
+                                        :search-mode      search-mode
+                                        :events-view      events-view
+                                        :q                q})
    (sql/format)
    #_(#(do (prn "#q" %) %))))
