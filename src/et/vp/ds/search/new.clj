@@ -58,7 +58,7 @@
    issue-ids-to-remove
    join-ids
    and-query?]
-  (prn "and-query?" and-query? (some? selected-context) join-ids)
+  #_(prn "and-query?" and-query? (some? selected-context) join-ids)
   (->
    (merge
     {:select :issues.id
@@ -80,4 +80,4 @@
                                         :events-view      events-view
                                         :q                q})
    (sql/format)
-   (#(do (prn "#q" %) %))))
+   #_(#(do (prn "#q" %) %))))
