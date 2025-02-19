@@ -29,11 +29,7 @@
     :where  [:and [:in :issues.id query]
                   (if join-ids 
                     [:= :collections.container_id [:raw (:id selected-context)]]
-                    true)]
-            #_(:and 
-                  #(if join-ids
-                    [:= :collections.container_id [:raw (:id selected-context)]]
-                    [:raw true]))}
+                    true)]}
    {:order-by [[:issues.updated_at (if (and selected-context link-issue) 
                                      :desc
                                      (if (= 1 search-mode)
