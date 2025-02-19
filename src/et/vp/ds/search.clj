@@ -228,12 +228,14 @@
 
 (defn- filter-issues
   [{:keys [link-issue 
-           selected-issue
+          ;;  selected-issue
            selected-context]} issues]
   (if-not link-issue 
-    (remove #(= (:id selected-issue) (:id %)) issues)
-    (if (= :issue link-issue)
-      (let [issue-ids-to-exclude (conj (set (map :id (:related_issues selected-issue)))
+    issues
+    #_(remove #(= (:id selected-issue) (:id %)) issues)
+    (if false #_(= :issue link-issue)
+      issues
+      #_(let [issue-ids-to-exclude (conj (set (map :id (:related_issues selected-issue)))
                                        (:id selected-issue))]
         (remove #(issue-ids-to-exclude (:id %)) 
                 issues))
