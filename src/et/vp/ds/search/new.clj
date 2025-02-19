@@ -30,11 +30,13 @@
                   (if join-ids 
                     [:= :collections.container_id [:raw (:id selected-context)]]
                     true)]}
-   {:order-by [[:issues.updated_at (if (and selected-context link-issue) 
-                                     :desc
-                                     (if (= 1 search-mode)
-                                       :asc 
-                                       :desc))]]}
+   {:order-by [(if (= 0 events-view)
+                 [:issues.updated_at (if (= 1 search-mode)  
+                                       :asc
+                                       :desc)]
+                 [:issues.date (if (= 1 events-view)
+                                 :asc
+                                 :desc)])]}
    (when (or (and (= "" q)
                   (not selected-context)
                   (= 0 events-view))

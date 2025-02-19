@@ -244,7 +244,7 @@
       (remove #(or ((set (keys (:contexts (:data %)))) (:id selected-context))
                    (= (:id %) (:id selected-context))) issues))))
 
-(defn- sort-for-events-view 
+#_(defn- sort-for-events-view 
   [issues events-view]
   (->> issues 
        (sort-by :date)
@@ -269,7 +269,8 @@
   (let [events-view (get-events-view state)
         in-events-view? (not= 0 events-view)]
     (if in-events-view? 
-      (sort-for-events-view issues events-view)
+      issues
+      #_(sort-for-events-view issues events-view)
       (sort-for-regular-view issues state))))
 
 (defn- search-issues'
