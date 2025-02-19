@@ -71,7 +71,7 @@
        :group-by :issues.id
        :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})))
 
-(defn do-fetch-ids'' ;; TODO rename, it doesn't return only the ids
+(defn fetch-issues
   [{:keys [q link-issue]
     :or   {q ""}} 
    issue-ids-to-remove

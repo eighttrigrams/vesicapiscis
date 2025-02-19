@@ -216,7 +216,7 @@
         and-query? (or (and selected-context (= :context link-issue)) 
                        secondary-contexts-but-no-modifiers-selected?)
         issues-ids (do-query db 
-                             (search.new/do-fetch-ids'' 
+                             (search.new/fetch-issues 
                                              state 
                                              urgent-issues-ids-simplified 
                                              {:selected-context selected-context
@@ -230,28 +230,11 @@
 
 (defn- filter-issues
   [{:keys [link-issue 
-          ;;  selected-issue
            selected-context]} issues]
-  (if-not link-issue 
-    issues
-    #_(remove #(= (:id selected-issue) (:id %)) issues)
-    (if false #_(= :issue link-issue) ;; won't happen
-        issues
-      #_(let [issue-ids-to-exclude (conj (set (map :id (:related_issues selected-issue)))
-                                       (:id selected-issue))]
-        (remove #(issue-ids-to-exclude (:id %)) 
-                issues))
-      (remove #(or ((set (keys (:contexts (:data %)))) (:id selected-context))
-                   (= (:id %) (:id selected-context))) issues))))
-
-#_(defn- sort-for-events-view 
-  [issues events-view]
-  (->> issues 
-       (sort-by :date)
-       (filter :date)
-       (#(if (= 2 events-view)
-           (reverse %)
-           %))))
+  (if link-issue 
+    (remove #(or ((set (keys (:contexts (:data %)))) (:id selected-context))
+                 (= (:id %) (:id selected-context))) issues)
+    issues))
 
 (defn- sort-for-regular-view 
   [issues 
@@ -270,7 +253,6 @@
         in-events-view? (not= 0 events-view)]
     (if in-events-view? 
       issues
-      #_(sort-for-events-view issues events-view)
       (sort-for-regular-view issues state))))
 
 (defn- search-issues'
