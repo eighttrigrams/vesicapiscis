@@ -147,8 +147,7 @@
    "sort ascending and descending (only available in context)"
    (let [[item-1 _item-2] (create-issues {:integer-short-titles? true})]
      (is (= "title-1-2" (q item-1 {:search-mode :integer-short-titles-asc})))
-     (is (= "title-1-1" (q item-1 {:search-mode :integer-short-titles-desc})))
-     #_(is (= "title-2-2" (q item-2 {:search-mode :integer-short-titles-desc}))))))
+     (is (= "title-1-1" (q item-1 {:search-mode :integer-short-titles-desc}))))))
 
 (defn- create-issues-for-intersection-tests [{}]
   (let [item-1    (new-item db {:title       "title-1"})
