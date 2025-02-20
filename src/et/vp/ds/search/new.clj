@@ -50,11 +50,18 @@
              (get-events-exist-clause events-view)
              (if join-ids 
                [:= :collections.container_id [:raw (:id selected-context)]]
-               true)]}
+               ;; TODO get rid of true and use when instead if
+               true)
+             (when (or (= 2 search-mode) (= 3 search-mode))
+               [:> :short_title_ints 0])]}
    {:order-by [(if (= 0 events-view)
-                 [:issues.updated_at (if (= 1 search-mode)  
-                                       :asc
-                                       :desc)]
+                 (if (or (= 2 search-mode) (= 3 search-mode ))
+                   [:issues.short_title_ints (if (= 2 search-mode)
+                                               :asc
+                                               :desc)]
+                   [:issues.updated_at (if (= 1 search-mode)  
+                                         :asc
+                                         :desc)])
                  [:issues.date (if (= 1 events-view)
                                  :asc
                                  :desc)])]}

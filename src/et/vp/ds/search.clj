@@ -229,20 +229,11 @@
                  (= (:id %) (:id selected-context))) issues)
     issues))
 
-(defn- re-order [search-mode issues]
-  (if (= 2 search-mode)
-    (sort-by #(:short_title_ints %)
-             (filter #(> (:short_title_ints %) 0) issues))
-    (reverse (sort-by #(:short_title_ints %)
-                                (filter #(> (:short_title_ints %) 0) issues)))))
-
 (defn- sort-for-regular-view 
   [issues 
    {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
     :keys [link-issue]}]
   (cond->> issues
-    (#{2 3} search-mode)
-    (re-order search-mode)
     (and (not link-issue)
          (not (#{2 3} search-mode))) 
     pin-events))
