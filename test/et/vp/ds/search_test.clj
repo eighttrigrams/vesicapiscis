@@ -4,8 +4,7 @@
             [next.jdbc :as jdbc]
             [et.vp.ds :as ds]
             [et.vp.ds.search :as search]
-            [et.vp.ds.helpers :as helpers]
-            [et.vp.ds.relations :as relations]))
+            [et.vp.ds.helpers :as helpers]))
 
 (defonce db (edn/read-string (slurp "./test_config.edn")))
 
@@ -41,6 +40,8 @@
            :last-touched-first [1 0]
            :upcoming-events [0 1]
            :past-events [0 2]
+           :integer-short-titles-asc [2 0]
+           :integer-short-titles-desc [3 0]
            [0 0])
          opts (assoc opts 
                      :search-mode search-mode
@@ -63,7 +64,7 @@
        :as opts}]
   (let [item
         (if context-ids-set
-          (ds/new-issue db title short-title context-ids-set)
+          (ds/new-issue db title short-title context-ids-set {:suppress-digit-check? true})
           (let [new-context (ds/new-context db opts)]
             (when short-title
               (ds/update-item db (assoc new-context :short_title short-title)))))]
@@ -71,20 +72,20 @@
       (ds/update-item db (assoc item :date date :archived archived))
       item)))
 
-(defn- create-issues [{:keys [events-expired?]}]
+(defn- create-issues [{:keys [events-expired? integer-short-titles?]}]
   (let [item-1    (new-item db {:title       "title-1" 
                                 :short-title "abc"})
         item-2    (new-item db {:title       "title-2" 
                                 :short-title "cde"})
         _item-1-1 (new-item db {:title           "title-1-1"
-                                :short-title     "abc"
+                                :short-title     (if-not integer-short-titles? "abc" "2")
                                 :context-ids-set #{(:id item-1)}
                                 :date            (if-not events-expired? 
                                                    "2025-01-03"
                                                    "2025-01-01")
                                 :archived        false})
         _item-1-2 (new-item db {:title           "title-1-2" 
-                                :short-title     "cde"
+                                :short-title     (if-not integer-short-titles? "cde" "1")
                                 :context-ids-set #{(:id item-1)}
                                 :date            (if-not events-expired? 
                                                    "2025-01-04"
@@ -92,7 +93,7 @@
                                 :archived        false})
         _item-2-1 (new-item db {:title           "title-2-1"
                                 :short-title     "abc"
-                                :context-ids-set #{(:id item-2)}
+                                :context-ids-set #{(:id (if-not integer-short-titles? item-2 item-1))}
                                 :date            "2025-01-03"
                                 :archived        true})
         _item-2-2 (new-item db {:title           "title-2-2" 
@@ -140,6 +141,14 @@
    "pin events"
    (let [[item-1] (create-issues {:events-expired? true})]
      (is (= "title-1-2" (q item-1 {}))))))
+
+(deftest sort-modes
+  (test-with-reset-db-and-time 
+   "sort ascending and descending (only available in context)"
+   (let [[item-1 _item-2] (create-issues {:integer-short-titles? true})]
+     (is (= "title-1-2" (q item-1 {:search-mode :integer-short-titles-asc})))
+     (is (= "title-1-1" (q item-1 {:search-mode :integer-short-titles-desc})))
+     #_(is (= "title-2-2" (q item-2 {:search-mode :integer-short-titles-desc}))))))
 
 (defn- create-issues-for-intersection-tests [{}]
   (let [item-1    (new-item db {:title       "title-1"})
