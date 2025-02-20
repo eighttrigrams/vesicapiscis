@@ -229,22 +229,15 @@
                  (= (:id %) (:id selected-context))) issues)
     issues))
 
-(defn- sort-for-regular-view 
-  [issues 
-   {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
-    :keys [link-issue]}]
-  (cond->> issues
-    (and (not link-issue)
-         (not (#{2 3} search-mode))) 
-    pin-events))
-
-(defn- sort-issues [state 
+(defn- sort-issues [{{{{{:keys [search-mode]} :current} :views} :data} :selected-context
+                     :keys [link-issue] :as state} 
                     issues]
-  (let [events-view (get-events-view state)
-        in-events-view? (not= 0 events-view)]
-    (if in-events-view? 
-      issues
-      (sort-for-regular-view issues state))))
+  (if (not= 0 (get-events-view state)) 
+    issues
+    (cond->> issues
+      (and (not link-issue)
+           (not (#{2 3} search-mode))) 
+      pin-events)))
 
 (defn- search-issues'
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
