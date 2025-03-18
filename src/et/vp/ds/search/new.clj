@@ -25,15 +25,15 @@
      :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})])
 
 (defn- order-by [search-mode]
-  [(if (or (= search-mode 1) (= search-mode 2) (= search-mode 3))
-     (if (or (= 2 search-mode) (= 3 search-mode ))
+  [(if (= search-mode 4)
+     [:issues.date :desc]
+     (if (or (= 2 search-mode) (= 3 search-mode))
        [:issues.short_title_ints (if (= 2 search-mode)
                                    :asc
                                    :desc)]
        [:issues.updated_at (if (= 1 search-mode)  
                              :asc
-                             :desc)])
-     [:issues.date :desc])])
+                             :desc)]))])
 
 (defn- limit [{:keys [selected-context
                       link-issue
