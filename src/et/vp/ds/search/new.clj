@@ -10,9 +10,7 @@
 
 (defn- get-events-exist-clause [events-view]
   (when (not= 0 events-view)
-    [:and
-     [:<> :issues.date nil]
-     [:not= :issues.archived [:inline (= 1 events-view)]]]))
+    [:<> :issues.date nil]))
 
 (defn- and-query 
   [{:keys [join-ids]}]
@@ -21,7 +19,6 @@
     {:select   :issues.id
      :from     [:issues]
      :where    [:and (when
-                   ;; TODO review necessity of when condition
                       join-ids [:in :collections.container_id [:inline join-ids]])]
      :join     [:collections [:= :issues.id :collections.item_id]]
      :group-by :issues.id
@@ -36,9 +33,7 @@
                    [:issues.updated_at (if (= 1 search-mode)  
                                          :asc
                                          :desc)])
-                 [:issues.date (if (= 1 events-view)
-                                 :asc
-                                 :desc)])])
+                 [:issues.date :desc])])
 
 (defn- limit [{:keys [selected-context
                       link-issue
@@ -51,8 +46,7 @@
      {:limit 500}))
 
 (defn- wrap-given-issues-query-with-limit
-  [issue-ids-to-remove
-   {:keys [selected-context
+  [{:keys [selected-context
            join-ids
            search-mode
            events-view
@@ -67,8 +61,6 @@
     :from   :issues
     :where  [:and
              (when and-query? (and-query opts))
-             (when issue-ids-to-remove
-                [:not [:in :issues.id [:inline issue-ids-to-remove]]])
              (get-search-clause q)
              (get-events-exist-clause events-view)
              (if join-ids 
@@ -91,11 +83,10 @@
 (defn fetch-issues
   [{:keys [q link-issue]
     :or   {q ""}} 
-   issue-ids-to-remove
    {:as opts}]
   #_(prn "and-query?" and-query? (some? selected-context) join-ids)
   (let [opts (assoc opts :q q :link-issue link-issue)]
     (->
-     (wrap-given-issues-query-with-limit issue-ids-to-remove opts)
+     (wrap-given-issues-query-with-limit opts)
      (sql/format)
      #_(#(do (prn "#q" %) %)))))

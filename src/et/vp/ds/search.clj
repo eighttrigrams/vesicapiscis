@@ -92,19 +92,6 @@
         (log/error (str "error in search/search-contexts: " e " - param was: " q))
         (throw e)))))
 
-(defn- expired-filter [issue]
-  (and
-   (:date issue)
-   (not (:archived issue))
-   (= 1 (.compareTo (helpers/instant-now)
-                    (java.time.Instant/parse (str (:date issue) "T05:45:00Z"))))))
-
-(defn- pin-events [issues]
-  (let [top (filter expired-filter issues)
-        ;; TODO don't do remove if top is empty
-        bottom (remove expired-filter issues)]
-    (concat top bottom)))
-
 ;; TODO most of this, when not inverted and not unassigned selected, can be done as part of the query in do-fetch-ids' 
 (defn- filter-by-selected-secondary-contexts 
   [{:keys [link-issue]
@@ -144,35 +131,13 @@
 (defn today-date []
   (helpers/gen-date))
 
-(defn- do-fetch-urgent-issues-ids [db link-issue events-view selected-context q]
-  (let [urgent-events-query
-        (sql/format
-         {:select   search.core/select
-          :from     [:issues]
-          :order-by [[:updated_at :desc]]
-          :where    [:and
-                     [:<> :issues.date nil]
-                     [:not= :issues.archived true]
-                     [:< 
-                      :date
-                      [:raw (today-date)]]]})]
-    (if (or link-issue 
-            (not= 0 events-view)
-            selected-context
-            (and (string? q) (not= "" q)))
-          '()
-          (jdbc/execute! 
-           db 
-           urgent-events-query))))
-
 (defn- do-query [db formatted-query]
   (let [issues (jdbc/execute! db formatted-query)]
     #_(log/info (str "count: " (count issues)))
     issues))
 
 (defn- do-fetch-ids 
-  [db {:keys [q search-globally? selected-context selected-issue link-issue]
-       :or   {q ""}
+  [db {:keys [search-globally? selected-context selected-issue link-issue]
        :as   state} search-mode]
   (let [context-ids-to-join-on-link-issue-context (-> selected-context :data :views :current :selected-secondary-contexts)
         context-ids-to-join-on-link-issue-issue (keys (:contexts (:data selected-issue)))
@@ -184,8 +149,6 @@
                                         (seq context-ids-to-join-on-link-issue-context)))) 
                            nil selected-context)
         events-view (get-events-view state)
-        urgent-issues-ids (do-fetch-urgent-issues-ids db link-issue events-view selected-context q)
-        urgent-issues-ids-simplified (when (seq urgent-issues-ids) (map :issues/id urgent-issues-ids))
         secondary-contexts-but-no-modifiers-selected? (let [{{{{:keys [selected-secondary-contexts
                                             secondary-contexts-inverted
                                             secondary-contexts-unassigned-selected]} :current} :views} :data} selected-context]
@@ -211,7 +174,6 @@
         issues-ids (do-query db 
                              (search.new/fetch-issues 
                                              state 
-                                             urgent-issues-ids-simplified 
                                              {:selected-context selected-context
                                               :join-ids         join-ids
                                               :link-issue       link-issue
@@ -219,7 +181,7 @@
                                               :events-view      events-view
                                               :and-query?       and-query?}))]
     #_(prn "issues-ids" (map :issues/id issues-ids))
-    (seq (concat urgent-issues-ids issues-ids))))
+    (seq issues-ids)))
 
 (defn- filter-issues
   [{:keys [link-issue 
@@ -229,23 +191,12 @@
                  (= (:id %) (:id selected-context))) issues)
     issues))
 
-(defn- sort-issues [{{{{{:keys [search-mode]} :current} :views} :data} :selected-context
-                     :keys [link-issue] :as state} 
-                    issues]
-  (if (not= 0 (get-events-view state)) 
-    issues
-    (cond->> issues
-      (and (not link-issue)
-           (not (#{2 3} search-mode))) 
-      pin-events)))
-
 (defn- search-issues'
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
        :as opts}]
        (let [issues (do-fetch-ids db opts search-mode)]
          (->> issues
               (map post-process)
-              (sort-issues opts)
               (filter-by-selected-secondary-contexts opts)
               (filter-issues opts))))
 

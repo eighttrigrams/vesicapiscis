@@ -246,19 +246,10 @@
                                        :where  [:= :id [:inline id]]})))
   (get-item db selected-context))
 
-(defn show-events [db {:keys [id] :as context}]
-  (let [data (-> (get-item db context)
-                 :data
-                 (assoc-in [:views :current :events-view] 1))]
-    (jdbc/execute-one! db (sql/format {:update [:issues]
-                                       :set    {:data [:inline (json/generate-string data)]}
-                                       :where  [:= :id [:inline id]]}))
-    (get-item db context)))
-
 (defn show-past-events [db {:keys [id] :as context}]
   (let [data (-> (get-item db context)
                  :data
-                 (assoc-in [:views :current :events-view] 2))]
+                 (assoc-in [:views :current :events-view] 1))]
     (jdbc/execute-one! db (sql/format {:update [:issues]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]}))
