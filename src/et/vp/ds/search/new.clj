@@ -27,15 +27,17 @@
 
 (defn- order-by [search-mode]
   (log/info {:search-mode search-mode})
-  [(if (= search-mode 4)
-     [:issues.date :desc]
-     (if (or (= 2 search-mode) (= 3 search-mode))
-       [:issues.short_title_ints (if (= 2 search-mode)
-                                   :asc
-                                   :desc)]
-       [:issues.updated_at (if (= 1 search-mode)  
-                             :asc
-                             :desc)]))])
+  [(if (= search-mode 5)
+     [:issues.inserted_at :desc]
+     (if (= search-mode 4)
+       [:issues.date :desc]
+       (if (or (= 2 search-mode) (= 3 search-mode))
+         [:issues.short_title_ints (if (= 2 search-mode)
+                                     :asc
+                                     :desc)]
+         [:issues.updated_at (if (= 1 search-mode)  
+                               :asc
+                               :desc)])))])
 
 (defn- limit [{:keys [selected-context
                       link-issue

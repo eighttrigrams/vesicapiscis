@@ -248,7 +248,7 @@
   (let [data (-> (get-item db context)
                  :data
                  (update-in [:views :current :search-mode]
-                            #(mod (inc (or % 0)) 5)))]
+                            #(mod (inc (or % 0)) 6)))]
     (jdbc/execute-one! db (sql/format {:update [:issues]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]}))
