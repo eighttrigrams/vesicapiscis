@@ -37,12 +37,11 @@
 
 (defn- limit [{:keys [selected-context
                       link-issue
-                      events-view
                       search-mode
                       q]}]
   (when (or (and (= "" q)
                   (not selected-context)
-                  (not= 4 sort-mode)
+                  (not= 4 search-mode))
              link-issue)
      {:limit 500}))
 
