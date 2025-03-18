@@ -244,29 +244,11 @@
                                        :where  [:= :id [:inline id]]})))
   (get-item db selected-context))
 
-(defn show-past-events [db {:keys [id] :as context}]
-  (let [data (-> (get-item db context)
-                 :data
-                 (assoc-in [:views :current :events-view] 1))]
-    (jdbc/execute-one! db (sql/format {:update [:issues]
-                                       :set    {:data [:inline (json/generate-string data)]}
-                                       :where  [:= :id [:inline id]]}))
-    (get-item db context)))
-
-(defn deselect-events [db {:keys [id] :as context}]
-  (let [data (-> (get-item db context)
-                 :data
-                 (assoc-in [:views :current :events-view] 0))]
-    (jdbc/execute-one! db (sql/format {:update [:issues]
-                                       :set    {:data [:inline (json/generate-string data)]}
-                                       :where  [:= :id [:inline id]]}))
-    (get-item db context)))
-
 (defn cycle-search-mode [db {:keys [id] :as context}]
   (let [data (-> (get-item db context)
                  :data
                  (update-in [:views :current :search-mode]
-                            #(mod (inc (or % 0)) 4)))]
+                            #(mod (inc (or % 0)) 5)))]
     (jdbc/execute-one! db (sql/format {:update [:issues]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]}))

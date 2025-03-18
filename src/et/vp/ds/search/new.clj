@@ -8,8 +8,8 @@
     [:raw (format "searchable @@ to_tsquery('simple', '%s')" 
                   (search.helpers/convert-q-to-query-string q))]))
 
-(defn- get-events-exist-clause [events-view]
-  (when (not= 0 events-view)
+(defn- get-events-exist-clause [search-mode]
+  (when (= 4 search-mode)
     [:<> :issues.date nil]))
 
 (defn- and-query 
@@ -24,16 +24,16 @@
      :group-by :issues.id
      :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})])
 
-(defn- order-by [events-view search-mode]
-  [(if (= 0 events-view)
-                 (if (or (= 2 search-mode) (= 3 search-mode ))
-                   [:issues.short_title_ints (if (= 2 search-mode)
-                                               :asc
-                                               :desc)]
-                   [:issues.updated_at (if (= 1 search-mode)  
-                                         :asc
-                                         :desc)])
-                 [:issues.date :desc])])
+(defn- order-by [search-mode]
+  [(if (or (= search-mode 1) (= search-mode 2) (= search-mode 3))
+     (if (or (= 2 search-mode) (= 3 search-mode ))
+       [:issues.short_title_ints (if (= 2 search-mode)
+                                   :asc
+                                   :desc)]
+       [:issues.updated_at (if (= 1 search-mode)  
+                             :asc
+                             :desc)])
+     [:issues.date :desc])])
 
 (defn- limit [{:keys [selected-context
                       link-issue
@@ -49,7 +49,6 @@
   [{:keys [selected-context
            join-ids
            search-mode
-           events-view
            and-query?
            q]
     :as opts}]
@@ -62,14 +61,14 @@
     :where  [:and
              (when and-query? (and-query opts))
              (get-search-clause q)
-             (get-events-exist-clause events-view)
+             (get-events-exist-clause search-mode)
              (if join-ids 
                [:= :collections.container_id [:raw (:id selected-context)]]
                ;; TODO get rid of true and use when instead if
                true)
              (when (or (= 2 search-mode) (= 3 search-mode))
                [:> :short_title_ints 0])]}
-   {:order-by (order-by events-view search-mode)}
+   {:order-by (order-by search-mode)}
    (limit opts)
    (when join-ids
      {:join [:collections [:= :issues.id :collections.item_id]]})))
