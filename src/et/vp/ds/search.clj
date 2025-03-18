@@ -121,12 +121,8 @@
       issues)))
 
 (defn- get-events-view 
-  [{{{{{:keys [events-view]} :current} :views} :data
-     :as                                       selected-context} :selected-context
-    global-events-view :events-view}]
-  (or (if selected-context
-        events-view
-        global-events-view) 0))
+  [{{{{{:keys [events-view]} :current} :views} :data} :selected-context}]
+  events-view)
 
 (defn today-date []
   (helpers/gen-date))
@@ -241,7 +237,6 @@
    highlighted-secondary-contexts]
   (let [issues (search-issues' db (-> opts
                                       (assoc :q "")
-                                      (assoc :events-view 0)
                                       (assoc-in [:selected-context :data :views :current :events-view] 0)
                                       (assoc-in [:selected-context :data :views :current :search-mode] 0)
                                       (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
@@ -259,7 +254,6 @@
           (sort-by first)
           reverse
           (map (fn [[count [id title]]] [id [title count]]))
-
           (sort-secondary-contexts db highlighted-secondary-contexts)))))
 
 (defn fetch-aggregated-contexts [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
