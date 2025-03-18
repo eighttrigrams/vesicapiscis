@@ -38,8 +38,7 @@
    (let [[search-mode events-view] 
          (case search-mode
            :last-touched-first [1 0]
-           :upcoming-events [0 1]
-           :past-events [0 2]
+           :past-events [0 1]
            :integer-short-titles-asc [2 0]
            :integer-short-titles-desc [3 0]
            [0 0])
@@ -72,7 +71,7 @@
       (ds/update-item db (assoc item :date date :archived archived))
       item)))
 
-(defn- create-issues [{:keys [events-expired? integer-short-titles?]}]
+(defn- create-issues [{:keys [integer-short-titles?]}]
   (let [item-1    (new-item db {:title       "title-1" 
                                 :short-title "abc"})
         item-2    (new-item db {:title       "title-2" 
@@ -80,16 +79,12 @@
         _item-1-1 (new-item db {:title           "title-1-1"
                                 :short-title     (if-not integer-short-titles? "abc" "2")
                                 :context-ids-set #{(:id item-1)}
-                                :date            (if-not events-expired? 
-                                                   "2025-01-03"
-                                                   "2025-01-01")
+                                :date            "2025-01-03"
                                 :archived        false})
         _item-1-2 (new-item db {:title           "title-1-2" 
                                 :short-title     (if-not integer-short-titles? "cde" "1")
                                 :context-ids-set #{(:id item-1)}
-                                :date            (if-not events-expired? 
-                                                   "2025-01-04"
-                                                   "2024-12-31")
+                                :date            "2024-12-31"
                                 :archived        false})
         _item-2-1 (new-item db {:title           "title-2-1"
                                 :short-title     "abc"
@@ -125,22 +120,13 @@
 
 (deftest events
   (test-with-reset-db-and-time 
-   "base case - overview"
-   (create-issues {})
-   (is (= "title-1-1" (q nil {:search-mode :upcoming-events}))))
-  (test-with-reset-db-and-time 
-   "base case - overview - arvhived events"
+   "base case - overview - archived events"
    (create-issues {:dates? true})
    (is (= "title-2-2" (q nil {:search-mode :past-events}))))
   (test-with-reset-db-and-time 
    "in context"
    (let [[item-1 item-2] (create-issues {})]
-     (is (= "title-1-1" (q item-1 {:search-mode :upcoming-events})))
-     (is (= "title-2-2" (q item-2 {:search-mode :past-events})))))
-  (test-with-reset-db-and-time 
-   "pin events"
-   (let [[item-1] (create-issues {:events-expired? true})]
-     (is (= "title-1-2" (q item-1 {}))))))
+     (is (= "title-2-2" (q item-2 {:search-mode :past-events}))))))
 
 (deftest sort-modes
   (test-with-reset-db-and-time 
