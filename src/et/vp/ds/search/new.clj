@@ -1,7 +1,8 @@
 (ns et.vp.ds.search.new
   (:require [et.vp.ds.search.core :as search.core]
             [et.vp.ds.search.helpers :as search.helpers]
-            [honey.sql :as sql]))
+            [honey.sql :as sql]
+            [cambium.core :as log]))
 
 (defn- get-search-clause [q]
   (when (not= "" q)
@@ -25,6 +26,7 @@
      :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})])
 
 (defn- order-by [search-mode]
+  (log/info {:search-mode search-mode})
   [(if (= search-mode 4)
      [:issues.date :desc]
      (if (or (= 2 search-mode) (= 3 search-mode))
