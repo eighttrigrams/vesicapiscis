@@ -35,13 +35,14 @@
   ([selected-context {:keys [q search-mode]
                       :or {q ""}
                       :as opts}]
-   (let [[search-mode] 
+   (let [search-mode 
          (case search-mode
-           :last-touched-first [1 0]
-           :past-events [0 1]
-           :integer-short-titles-asc [2 0]
-           :integer-short-titles-desc [3 0]
-           [0 0])
+           :last-touched-first 1
+           :past-events 4
+           ;; 5 is missing, it is ""last added"
+           :integer-short-titles-asc 2
+           :integer-short-titles-desc 3
+           0)
          opts (assoc opts :search-mode search-mode)]
      (:title 
       (ffirst
@@ -115,12 +116,14 @@
 (deftest events
   (test-with-reset-db-and-time 
    "base case - overview"
-   (create-issues {:dates? true})
-   (is (= "title-2-2" (q nil {:search-mode :past-events}))))
+   (create-issues {})
+   (is (= "title-2-2" (q nil {}))))
   (test-with-reset-db-and-time 
    "in context"
    (let [[_item-1 item-2] (create-issues {})]
-     (is (= "title-2-2" (q item-2 {:search-mode :past-events}))))))
+     (is (= "title-2-2" (q item-2 {:search-mode :past-events})))))
+  ;; TODO add tests for "last added" (search mode 5)
+  )
 
 (deftest sort-modes
   (test-with-reset-db-and-time 
@@ -137,7 +140,7 @@
                                                  (:id item-2)}})
         _item-4 (new-item db {:title           "title-4"
                               :context-ids-set #{(:id item-1)}})]
-    ;; the test should work with and without this line
+    ;; the test should work with and without this line -- TODO review/reenable
     #_(relations/set-the-containers-of-item! db 
                                            item-3
                                            {(:id item-1) {:annotation "a"}
