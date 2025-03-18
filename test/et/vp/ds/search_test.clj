@@ -35,16 +35,14 @@
   ([selected-context {:keys [q search-mode]
                       :or {q ""}
                       :as opts}]
-   (let [[search-mode events-view] 
+   (let [[search-mode] 
          (case search-mode
            :last-touched-first [1 0]
            :past-events [0 1]
            :integer-short-titles-asc [2 0]
            :integer-short-titles-desc [3 0]
            [0 0])
-         opts (assoc opts 
-                     :search-mode search-mode
-                     :events-view events-view)]
+         opts (assoc opts :search-mode search-mode)]
      (:title 
       (ffirst
        (search/search-issues 

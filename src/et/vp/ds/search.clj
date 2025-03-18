@@ -120,13 +120,6 @@
        issues)
       issues)))
 
-(defn- get-events-view 
-  [{{{{{:keys [events-view]} :current} :views} :data} :selected-context}]
-  events-view)
-
-(defn today-date []
-  (helpers/gen-date))
-
 (defn- do-query [db formatted-query]
   (let [issues (jdbc/execute! db formatted-query)]
     #_(log/info (str "count: " (count issues)))
@@ -144,7 +137,6 @@
                                    (and (= :context link-issue)
                                         (seq context-ids-to-join-on-link-issue-context)))) 
                            nil selected-context)
-        events-view (get-events-view state)
         secondary-contexts-but-no-modifiers-selected? (let [{{{{:keys [selected-secondary-contexts
                                             secondary-contexts-inverted
                                             secondary-contexts-unassigned-selected]} :current} :views} :data} selected-context]
@@ -174,7 +166,6 @@
                                               :join-ids         join-ids
                                               :link-issue       link-issue
                                               :search-mode      search-mode
-                                              :events-view      events-view
                                               :and-query?       and-query?}))]
     #_(prn "issues-ids" (map :issues/id issues-ids))
     (seq issues-ids)))
@@ -237,7 +228,6 @@
    highlighted-secondary-contexts]
   (let [issues (search-issues' db (-> opts
                                       (assoc :q "")
-                                      (assoc-in [:selected-context :data :views :current :events-view] 0)
                                       (assoc-in [:selected-context :data :views :current :search-mode] 0)
                                       (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
                                       (assoc-in [:selected-context :data :views :current :secondary-contexts-inverted] false)
