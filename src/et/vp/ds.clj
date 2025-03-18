@@ -11,14 +11,12 @@
 (defn delete-date [db issue-id]
   (jdbc/execute! db
                  (sql/format {:update [:issues]
-                       :set    {:date nil
-                                :archived nil}
+                       :set    {:date nil}
                        :where [:= :id [:inline issue-id]]})))
 
-(defn insert-date [db issue-id date archived]
+(defn insert-date [db issue-id date]
   (jdbc/execute! db (sql/format {:update [:issues]
-                                 :set    {:date [:inline date]
-                                          :archived [:inline archived]}
+                                 :set    {:date [:inline date]}
                                  :where [:= :id [:inline issue-id]]})))
 
 (defn- update-contexts [item]
@@ -192,10 +190,10 @@
     (or (not= (:title old-item) title)
         (not= (:short_title old-item) short_title))))
 
-(defn update-item [db {:keys [id title short_title date archived] :as item}]
+(defn update-item [db {:keys [id title short_title date] :as item}]
   (delete-date db id)
   (when date
-    (insert-date db id date archived))
+    (insert-date db id date))
   (let [has-title-changed? (update-item' db item)]
     (when has-title-changed?
       (future

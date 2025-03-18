@@ -7,5 +7,4 @@
              :issues.data
              :issues.is_context
              :issues.updated_at
-             :issues.date
-             :issues.archived])
+             :issues.date])

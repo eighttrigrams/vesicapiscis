@@ -58,7 +58,7 @@
 (defn- new-item 
   "In place because I want to end up having only new-item, 
    instead new-item and new-context"
-  [db {:keys [title short-title context-ids-set date archived]
+  [db {:keys [title short-title context-ids-set date]
        :or {short-title ""}
        :as opts}]
   (let [item
@@ -68,7 +68,7 @@
             (when short-title
               (ds/update-item db (assoc new-context :short_title short-title)))))]
     (if date
-      (ds/update-item db (assoc item :date date :archived archived))
+      (ds/update-item db (assoc item :date date))
       item)))
 
 (defn- create-issues [{:keys [integer-short-titles?]}]
@@ -79,23 +79,19 @@
         _item-1-1 (new-item db {:title           "title-1-1"
                                 :short-title     (if-not integer-short-titles? "abc" "2")
                                 :context-ids-set #{(:id item-1)}
-                                :date            "2025-01-03"
-                                :archived        false})
+                                :date            "2025-01-03"})
         _item-1-2 (new-item db {:title           "title-1-2" 
                                 :short-title     (if-not integer-short-titles? "cde" "1")
                                 :context-ids-set #{(:id item-1)}
-                                :date            "2024-12-31"
-                                :archived        false})
+                                :date            "2024-12-31"})
         _item-2-1 (new-item db {:title           "title-2-1"
                                 :short-title     "abc"
                                 :context-ids-set #{(:id (if-not integer-short-titles? item-2 item-1))}
-                                :date            "2025-01-03"
-                                :archived        true})
+                                :date            "2025-01-03"})
         _item-2-2 (new-item db {:title           "title-2-2" 
                                 :short-title     "cde"
                                 :context-ids-set #{(:id item-2)}
-                                :date            "2025-01-04" 
-                                :archived        true})]
+                                :date            "2025-01-04"})]
     [item-1 item-2]))
 
 (defmacro test-with-reset-db-and-time [string & body]
@@ -120,12 +116,12 @@
 
 (deftest events
   (test-with-reset-db-and-time 
-   "base case - overview - archived events"
+   "base case - overview"
    (create-issues {:dates? true})
    (is (= "title-2-2" (q nil {:search-mode :past-events}))))
   (test-with-reset-db-and-time 
    "in context"
-   (let [[item-1 item-2] (create-issues {})]
+   (let [[_item-1 item-2] (create-issues {})]
      (is (= "title-2-2" (q item-2 {:search-mode :past-events}))))))
 
 (deftest sort-modes
