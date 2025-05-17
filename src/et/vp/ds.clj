@@ -190,7 +190,9 @@
     (or (not= (:title old-item) title)
         (not= (:short_title old-item) short_title))))
 
-(defn update-item [db {:keys [id title short_title date] :as item}]
+(defn update-item
+  "NOTE that dissoc on data items won't work as there is a merge of the old with the new data going on."
+  [db {:keys [id title short_title date] :as item}]
   (delete-date db id)
   (when date
     (insert-date db id date))
