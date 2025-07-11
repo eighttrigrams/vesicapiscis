@@ -92,33 +92,33 @@
         (log/error (str "error in search/search-contexts: " e " - param was: " q))
         (throw e)))))
 
-;; TODO most of this, when not inverted and not unassigned selected, can be done as part of the query in do-fetch-ids' 
-(defn- filter-by-selected-secondary-contexts 
-  [{:keys [link-issue]
-    {{{{:keys [selected-secondary-contexts
-              secondary-contexts-unassigned-selected
-              secondary-contexts-inverted]} :current} :views} :data} :selected-context}
+(defn- filter-by-selected-secondary-contexts'
+  [{:keys [selected-secondary-contexts
+           secondary-contexts-unassigned-selected
+           secondary-contexts-inverted]}  
    issues]
-  (let [selected-secondary-contexts-set (into #{} selected-secondary-contexts)
-        link-issue? link-issue]
-    (if (and (not link-issue?)
-             (or secondary-contexts-unassigned-selected
-                 secondary-contexts-inverted))
-      ((if-not secondary-contexts-inverted filter remove)
-       (fn [issue]
-         (or 
-          (and secondary-contexts-unassigned-selected
-               (= 1 (count (:contexts (:data issue)))))
-          
-          (if-not secondary-contexts-inverted
-            (and (not secondary-contexts-unassigned-selected)
-                 (every? identity (map #(contains? (set (keys (:contexts (:data issue)))) %) 
-                                       selected-secondary-contexts-set)))
-            (seq (set/intersection 
-                  (set (keys (:contexts (:data issue))))
-                  selected-secondary-contexts-set)))))
-       issues)
-      issues)))
+  (let [selected-secondary-contexts-set (into #{} selected-secondary-contexts)]
+    ((if-not secondary-contexts-inverted filter remove)
+     (fn [issue]
+       (or
+        (and secondary-contexts-unassigned-selected
+             (= 1 (count (:contexts (:data issue))))) 
+        (seq (set/intersection 
+              (set (keys (:contexts (:data issue))))
+              selected-secondary-contexts-set))))
+     issues)))
+
+(defn- filter-by-selected-secondary-contexts 
+  [{:keys [link-issue selected-context]}
+   issues]
+  (let [current-view-data (-> selected-context :data :views :current)
+        {:keys [secondary-contexts-unassigned-selected
+                secondary-contexts-inverted]} current-view-data]
+    (if (or link-issue 
+            (and (not secondary-contexts-inverted) 
+                 (not secondary-contexts-unassigned-selected)))
+      issues
+      (filter-by-selected-secondary-contexts' current-view-data issues))))
 
 (defn- do-query [db formatted-query]
   (let [issues (jdbc/execute! db formatted-query)]

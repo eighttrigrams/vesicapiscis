@@ -168,6 +168,7 @@
   (let [old-item      (get-item db item)
         old-data      (:data old-item)
         data          (if data
+                        ;; This will prevent any attempts of a dissoc, btw. Not sure if I wanted that.
                         (merge old-data data)
                         {})
         data (if (and (:contexts data) (map? (:contexts data)))

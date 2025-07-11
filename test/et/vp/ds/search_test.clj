@@ -21,7 +21,6 @@
 
 (defmacro with-time [& body]
   `(with-redefs [helpers/gen-date time-fn
-                 search/today-date (constantly "'2025-01-02'")
                  helpers/instant-now
                  (fn []
                    (java.time.Instant/parse "2025-01-02T05:45:00Z"))]
