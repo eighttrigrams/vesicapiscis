@@ -48,13 +48,11 @@
      {:limit 500}))
 
 (defn- wrap-given-issues-query-with-limit
-  [{:keys [selected-context
+  [q {:keys [selected-context
            join-ids
            search-mode
-           and-query?
-           q]
+           and-query?]
     :as opts}]
-  #_(prn "query" query)
   (merge 
    {:select (if selected-context 
               (vec (concat search.core/select [:collections.annotation]))
@@ -75,19 +73,9 @@
    (when join-ids
      {:join [:collections [:= :issues.id :collections.item_id]]})))
 
-(comment
-  #_(sql/format (wrap-given-issues-query-with-limit {:select :ids 
-                                                   :from   :issues
-                                                   :where [:in [:issues.id [10 20]]]} 
-                                                  {})))
-
 (defn fetch-issues
-  [{:keys [q]
-    :or   {q ""}} 
+  [q 
    {:as opts}]
-  #_(prn "and-query?" and-query? (some? selected-context) join-ids)
-  (let [opts (assoc opts :q q)]
-    (->
-     (wrap-given-issues-query-with-limit opts)
-     (sql/format)
-     #_(#(do (prn "#q" %) %)))))
+  (->
+   (wrap-given-issues-query-with-limit q opts)
+   (sql/format)))
