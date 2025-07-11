@@ -26,6 +26,7 @@
      :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})])
 
 (defn- order-by [search-mode]
+  ;; TODO remove log from this namespace
   (log/info {:search-mode search-mode})
   [(if (= search-mode 5)
      [:issues.inserted_at :desc]
