@@ -152,7 +152,7 @@
                        secondary-contexts-but-no-modifiers-selected?)
         issues-ids (do-query db 
                              (search.new/fetch-issues 
-                                             state 
+                                             (or (:q state) "") 
                                              {:selected-context selected-context
                                               :join-ids         join-ids
                                               :force-limit?     link-issue
