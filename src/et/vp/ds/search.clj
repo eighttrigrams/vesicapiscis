@@ -127,11 +127,11 @@
 (defn- do-fetch-ids 
   [db {:keys [search-globally? selected-context link-issue]
        :as   state} search-mode]
-  (let [context-ids-to-join-on-link-issue-context (-> selected-context :data :views :current :selected-secondary-contexts)
+  (let [selected-secondary-contexts (-> selected-context :data :views :current :selected-secondary-contexts)
         selected-context (if (and search-globally?
                                   (not 
                                    (and (= :context link-issue)
-                                        (seq context-ids-to-join-on-link-issue-context)))) 
+                                        (seq selected-secondary-contexts)))) 
                            nil 
                            (when (:id selected-context) selected-context))
         secondary-contexts-but-no-modifiers-selected? (let [{{{{:keys [selected-secondary-contexts
@@ -142,9 +142,9 @@
                                       (not (seq selected-secondary-contexts)))))
         join-ids (if selected-context
                    (if link-issue
-                     context-ids-to-join-on-link-issue-context
+                     selected-secondary-contexts
                      (if secondary-contexts-but-no-modifiers-selected?
-                       (conj context-ids-to-join-on-link-issue-context
+                       (conj selected-secondary-contexts
                              (:id selected-context))
                        [(:id selected-context)]))
                    nil) 
