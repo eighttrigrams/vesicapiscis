@@ -164,7 +164,7 @@
                                              state 
                                              {:selected-context selected-context
                                               :join-ids         join-ids
-                                              :link-issue       link-issue
+                                              :force-limit?     link-issue
                                               :search-mode      search-mode
                                               :and-query?       and-query?}))]
     #_(prn "issues-ids" (map :issues/id issues-ids))

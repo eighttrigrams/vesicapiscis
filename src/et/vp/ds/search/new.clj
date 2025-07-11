@@ -40,11 +40,11 @@
                                :desc)])))])
 
 (defn- limit [{:keys [selected-context
-                      link-issue
+                      force-limit?
                       q]}]
   (when (or (and (= "" q)
                  (not selected-context))
-             link-issue)
+             force-limit?)
      {:limit 500}))
 
 (defn- wrap-given-issues-query-with-limit
@@ -82,11 +82,11 @@
                                                   {})))
 
 (defn fetch-issues
-  [{:keys [q link-issue]
+  [{:keys [q]
     :or   {q ""}} 
    {:as opts}]
   #_(prn "and-query?" and-query? (some? selected-context) join-ids)
-  (let [opts (assoc opts :q q :link-issue link-issue)]
+  (let [opts (assoc opts :q q)]
     (->
      (wrap-given-issues-query-with-limit opts)
      (sql/format)
