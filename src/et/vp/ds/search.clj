@@ -3,7 +3,6 @@
             [cambium.core :as log]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
-            [et.vp.ds.search.core :as search.core]
             [et.vp.ds.search.new :as search.new]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
@@ -126,17 +125,15 @@
     issues))
 
 (defn- do-fetch-ids 
-  [db {:keys [search-globally? selected-context selected-issue link-issue]
+  [db {:keys [search-globally? selected-context link-issue]
        :as   state} search-mode]
   (let [context-ids-to-join-on-link-issue-context (-> selected-context :data :views :current :selected-secondary-contexts)
-        context-ids-to-join-on-link-issue-issue (keys (:contexts (:data selected-issue)))
-        selected-context (when (:id selected-context) selected-context)
-        originally-selected-context selected-context
         selected-context (if (and search-globally?
                                   (not 
                                    (and (= :context link-issue)
                                         (seq context-ids-to-join-on-link-issue-context)))) 
-                           nil selected-context)
+                           nil 
+                           (when (:id selected-context) selected-context))
         secondary-contexts-but-no-modifiers-selected? (let [{{{{:keys [selected-secondary-contexts
                                             secondary-contexts-inverted
                                             secondary-contexts-unassigned-selected]} :current} :views} :data} selected-context]
@@ -145,20 +142,12 @@
                                       (not (seq selected-secondary-contexts)))))
         join-ids (if selected-context
                    (if link-issue
-                     (if
-                     ;; TODO remove; this case doesn't exist anymore
-                      (= :issue link-issue)
-                       context-ids-to-join-on-link-issue-issue
-                       context-ids-to-join-on-link-issue-context)
+                     context-ids-to-join-on-link-issue-context
                      (if secondary-contexts-but-no-modifiers-selected?
                        (conj context-ids-to-join-on-link-issue-context
                              (:id selected-context))
                        [(:id selected-context)]))
-                   (when (and (not search-globally?) 
-                              (= :issue link-issue)
-                              (seq context-ids-to-join-on-link-issue-issue)
-                              (not originally-selected-context))
-                     context-ids-to-join-on-link-issue-issue)) 
+                   nil) 
         and-query? (or (and selected-context (= :context link-issue)) 
                        secondary-contexts-but-no-modifiers-selected?)
         issues-ids (do-query db 
@@ -169,7 +158,6 @@
                                               :force-limit?     link-issue
                                               :search-mode      search-mode
                                               :and-query?       and-query?}))]
-    #_(prn "issues-ids" (map :issues/id issues-ids))
     (seq issues-ids)))
 
 (defn- filter-issues
@@ -264,10 +252,7 @@
                                        opts 
                                        highlighted-secondary-contexts)))))
 
-(defn search-issues [db {:keys [skip-context-aggregation?
-                                only-context-aggregation?]
-                         :as opts}]
-  ;; (log/info (str "search-issues - skip-context-aggregation? " skip-context-aggregation? " : only-context-aggregation? " only-context-aggregation?))
+(defn search-issues [db opts]
   (sectime
    "search-issues"
    (let [opts (
