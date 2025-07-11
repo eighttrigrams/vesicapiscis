@@ -59,10 +59,8 @@
              (when and-query? (and-query opts))
              (get-search-clause q)
              (get-events-exist-clause search-mode)
-             (if join-ids 
-               [:= :collections.container_id [:raw (:id selected-context)]]
-               ;; TODO get rid of true and use when instead if
-               true)
+             (when join-ids 
+               [:= :collections.container_id [:raw (:id selected-context)]])
              (when (or (= 2 search-mode) (= 3 search-mode))
                [:> :short_title_ints 0])]}
    {:order-by (order-by search-mode)}
