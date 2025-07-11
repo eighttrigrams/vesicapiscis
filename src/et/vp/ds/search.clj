@@ -145,7 +145,9 @@
                                       (not (seq selected-secondary-contexts)))))
         join-ids (if selected-context
                    (if link-issue
-                     (if (= :issue link-issue)
+                     (if
+                     ;; TODO remove; this case doesn't exist anymore
+                      (= :issue link-issue)
                        context-ids-to-join-on-link-issue-issue
                        context-ids-to-join-on-link-issue-context)
                      (if secondary-contexts-but-no-modifiers-selected?
