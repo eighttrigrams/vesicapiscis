@@ -50,7 +50,8 @@
              join-ids
              search-mode]
     :as opts}]
-  (let [and-query? (and selected-context join-ids)]
+  (let [and-query? selected-context
+        opts (assoc opts :join-ids (vec (concat join-ids [(:id selected-context)])))]
     (merge 
      {:select (if selected-context 
                 (vec (concat search.core/select [:collections.annotation]))

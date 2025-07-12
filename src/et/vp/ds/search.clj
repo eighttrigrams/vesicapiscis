@@ -136,12 +136,9 @@
                            (when (:id selected-context) selected-context))
         current-view (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)
-        selected-secondary-contexts? (-> current-view :selected-secondary-contexts seq)
-        secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? 
-                                                           (no-modifiers-selected? current-view))
-        join-ids (vec (concat (when secondary-contexts-but-no-modifiers-selected?
-                                 selected-secondary-contexts)
-                               [(:id selected-context)]))
+        join-ids (when (and (seq selected-secondary-contexts)  
+                            (no-modifiers-selected? current-view))
+                   selected-secondary-contexts)
         issues-ids (do-query db 
                              (search.new/fetch-issues 
                               (or (:q state) "") 
