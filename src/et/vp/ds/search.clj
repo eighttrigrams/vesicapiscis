@@ -117,12 +117,12 @@
    
    issues]
   (let [{:keys [secondary-contexts-unassigned-selected
-                secondary-contexts-inverted]
+                secondary-contexts-inverted
+                selected-secondary-contexts]
          :as current-view} 
           (-> selected-context :data :views :current)]
     (if (or link-issue 
             (no-modifiers-selected? current-view)
-            ;; TODO simplify
             (and secondary-contexts-inverted
                  (not secondary-contexts-unassigned-selected)))
       issues
@@ -148,22 +148,32 @@
     (and (:secondary-contexts-inverted current-view) 
          (not (:secondary-contexts-unassigned-selected current-view)))))
 
+(defn modify [selected-context]
+  (when selected-context
+    (let [current-view (-> selected-context :data :views :current)]
+      (if (and (:selected-secondary-contexts current-view)  
+               (:secondary-contexts-unassigned-selected current-view))
+        (assoc-in selected-context 
+                  [:data :views :current :secondary-contexts-unassigned-selected] nil)
+        selected-context))))
+
 (defn- do-fetch-ids 
   [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
-  (let [selected-context-id (:id selected-context)
+  (let [
+        selected-context-id (:id selected-context)
         _ (when (and (some? selected-context) (not selected-context-id))
             (log/error (str "weird!" link-issue? (some? selected-context) (some? selected-context-id))))
         issues (do-query db 
-                             (search.new/fetch-issues 
-                              (or (:q state) "") 
-                              {:selected-context-id selected-context-id
-                               :force-limit?        link-issue?
-                               :limit               500
-                               :search-mode         search-mode
-                               :join-ids            (when-not link-issue? 
-                                                      (join-ids selected-context))
-                               :or-mode? (or-mode? selected-context)}))]
+                         (search.new/fetch-issues 
+                          (or (:q state) "") 
+                          {:selected-context-id selected-context-id
+                           :force-limit?        link-issue?
+                           :limit               500
+                           :search-mode         search-mode
+                           :join-ids            (when-not link-issue? 
+                                                  (join-ids selected-context))
+                           :or-mode? (or-mode? selected-context)}))]
     (seq issues)))
 
 (defn- filter-issues
@@ -258,10 +268,12 @@
                                        opts 
                                        highlighted-secondary-contexts)))))
 
+
 (defn search-issues [db opts]
   (sectime
    "search-issues"
    (let [opts (assoc opts :link-issue? (= :context (:link-issue opts)))
+         opts (update opts :selected-context modify)
          opts (
                 ;; TODO instead of doing this, make sure q is always at least ""
                if (:q opts) 
