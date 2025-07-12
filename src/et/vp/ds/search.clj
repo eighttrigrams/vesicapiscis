@@ -139,11 +139,9 @@
         selected-secondary-contexts? (-> current-view :selected-secondary-contexts seq)
         secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? 
                                                            (no-modifiers-selected? current-view))
-        join-ids (when-not link-issue?
-                   (when selected-context ;; <- why is this here necessary?
-                     (vec (concat (when secondary-contexts-but-no-modifiers-selected?
-                                    selected-secondary-contexts)
-                                  [(:id selected-context)]))))
+        join-ids (vec (concat (when secondary-contexts-but-no-modifiers-selected?
+                                 selected-secondary-contexts)
+                               [(:id selected-context)]))
         issues-ids (do-query db 
                              (search.new/fetch-issues 
                               (or (:q state) "") 
@@ -151,8 +149,7 @@
                                :force-limit?     link-issue?
                                :limit            500
                                :search-mode      search-mode
-                               :join-ids         join-ids
-                               :and-query?       secondary-contexts-but-no-modifiers-selected?}))]
+                               :join-ids         join-ids}))]
     (seq issues-ids)))
 
 (defn- filter-issues
