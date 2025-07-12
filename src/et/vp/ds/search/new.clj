@@ -46,14 +46,14 @@
      {:limit limit}))
 
 (defn- wrap-given-issues-query-with-limit
-  [q {:keys [selected-context
+  [q {:keys [selected-context-id
              join-ids
              search-mode]
     :as opts}]
-  (let [join-ids (when selected-context join-ids)
-        opts (assoc opts :join-ids (vec (concat join-ids [(:id selected-context)])))]
+  (let [join-ids (when selected-context-id join-ids)
+        opts (assoc opts :join-ids (vec (concat join-ids [selected-context-id])))]
     (merge 
-     {:select (if selected-context 
+     {:select (if selected-context-id
                 (vec (concat search.core/select [:collections.annotation]))
                 search.core/select)
       :from   :issues
@@ -61,13 +61,13 @@
                (when join-ids (and-query opts))
                (get-search-clause q)
                (get-events-exist-clause search-mode)
-               (when selected-context
-                 [:= :collections.container_id [:raw (:id selected-context)]])
+               (when selected-context-id
+                 [:= :collections.container_id [:raw selected-context-id]])
                (when (or (= 2 search-mode) (= 3 search-mode))
                  [:> :short_title_ints 0])]}
      {:order-by (order-by search-mode)}
      (limit q opts)
-     (when selected-context
+     (when selected-context-id
        {:join [:collections [:= :issues.id :collections.item_id]]}))))
 
 (defn fetch-issues

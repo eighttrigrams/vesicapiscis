@@ -127,26 +127,28 @@
     #_(log/info (str "count: " (count issues)))
     issues))
 
+(defn- join-ids [selected-context]
+  (let [current-view (-> selected-context :data :views :current)
+        selected-secondary-contexts (-> current-view :selected-secondary-contexts)]
+    (when (and (seq selected-secondary-contexts)  
+               (no-modifiers-selected? current-view))
+      selected-secondary-contexts)))
+
 (defn- do-fetch-ids 
   [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
-  (when (and (some? selected-context) (not (:id selected-context)))
-    (log/error (str "weird!" link-issue? (some? selected-context) (some? (:id selected-context)))))
-  (let [selected-context (when-not link-issue?
-                           (when (:id selected-context) selected-context))
-        current-view (-> selected-context :data :views :current)
-        selected-secondary-contexts (-> current-view :selected-secondary-contexts)
-        join-ids (when (and (seq selected-secondary-contexts)  
-                            (no-modifiers-selected? current-view))
-                   selected-secondary-contexts)
+  (let [selected-context-id (:id selected-context)
+        _ (when (and (some? selected-context) (not selected-context-id))
+            (log/error (str "weird!" link-issue? (some? selected-context) (some? selected-context-id))))
         issues-ids (do-query db 
                              (search.new/fetch-issues 
                               (or (:q state) "") 
-                              {:selected-context selected-context
-                               :force-limit?     link-issue?
-                               :limit            500
-                               :search-mode      search-mode
-                               :join-ids         join-ids}))]
+                              {:selected-context-id selected-context-id
+                               :force-limit?        link-issue?
+                               :limit               500
+                               :search-mode         search-mode
+                               :join-ids            (when-not link-issue? 
+                                                      (join-ids selected-context))}))]
     (seq issues-ids)))
 
 (defn- filter-issues
