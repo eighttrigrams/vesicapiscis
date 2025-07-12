@@ -93,11 +93,10 @@
 
 (defn- filter-by-selected-secondary-contexts'
   [{:keys [selected-secondary-contexts
-           secondary-contexts-unassigned-selected
-           secondary-contexts-inverted]}
+           secondary-contexts-unassigned-selected]}
    issues]
   (let [selected-secondary-contexts-set (into #{} selected-secondary-contexts)]
-    ((if-not secondary-contexts-inverted filter remove)
+    (remove
      (fn [issue]
        (or
         (and secondary-contexts-unassigned-selected
@@ -115,14 +114,12 @@
 (defn- filter-by-selected-secondary-contexts 
   [{:keys [link-issue selected-context]}
    issues]
-  (let [{:keys [secondary-contexts-unassigned-selected
-                secondary-contexts-inverted]
+  (let [{:keys [secondary-contexts-inverted]
          :as current-view} 
           (-> selected-context :data :views :current)]
     (if (and (not link-issue)
              (not (no-modifiers-selected? current-view))
-             (or (not secondary-contexts-unassigned-selected)
-                 secondary-contexts-inverted))
+             secondary-contexts-inverted)
       (filter-by-selected-secondary-contexts' current-view issues)
       issues)))
 
