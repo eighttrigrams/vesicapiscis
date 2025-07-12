@@ -94,7 +94,7 @@
 (defn- filter-by-selected-secondary-contexts'
   [{:keys [selected-secondary-contexts
            secondary-contexts-unassigned-selected
-           secondary-contexts-inverted]}  
+           secondary-contexts-inverted]}
    issues]
   (let [selected-secondary-contexts-set (into #{} selected-secondary-contexts)]
     ((if-not secondary-contexts-inverted filter remove)
@@ -117,7 +117,8 @@
    
    issues]
   (let [{:keys [secondary-contexts-unassigned-selected
-                secondary-contexts-inverted]
+                secondary-contexts-inverted
+                selected-secondary-contexts]
          :as current-view} 
           (-> selected-context :data :views :current)]
     (if (or link-issue 
@@ -125,30 +126,27 @@
             (and secondary-contexts-inverted
                  (not secondary-contexts-unassigned-selected))
             (and secondary-contexts-unassigned-selected
-                 (not secondary-contexts-inverted))) 
+                 (not secondary-contexts-inverted))
+            (and secondary-contexts-inverted
+                 secondary-contexts-unassigned-selected
+                 (not (seq selected-secondary-contexts))))
       issues
       (filter-by-selected-secondary-contexts' current-view issues))))
 
 (defn- do-query [db formatted-query]
   #_(prn "???" formatted-query)
   (let [issues (jdbc/execute! db formatted-query)]
-    #_(log/info (str "count: " (count issues)))
+    (log/info (str "count: " (count issues)))
     issues))
 
 (defn- join-ids [selected-context]
-  (let [current-view (-> selected-context :data :views :current)
-        selected-secondary-contexts (-> current-view :selected-secondary-contexts)]
-    (if 
-     (and (:secondary-contexts-unassigned-selected current-view)
-          (empty? selected-secondary-contexts)
-          (not (:secondary-contexts-inverted current-view)))
-      []
-      (when (and (seq selected-secondary-contexts)  
-                 (or (no-modifiers-selected? current-view)
-                   ;; TODO simplify
-                     (and (:secondary-contexts-inverted current-view)
-                          (not (:secondary-contexts-unassigned-selected current-view)))))
-        selected-secondary-contexts))))
+  (let [current-view                (-> selected-context :data :views :current)
+        selected-secondary-contexts (-> current-view :selected-secondary-contexts)] 
+    (when (and (seq selected-secondary-contexts)  
+               (or (no-modifiers-selected? current-view)
+                   (and (:secondary-contexts-inverted current-view)
+                        (not (:secondary-contexts-unassigned-selected current-view)))))
+      selected-secondary-contexts)))
 
 (defn- or-mode? [selected-context]
   (let [current-view (-> selected-context :data :views :current)]
@@ -180,6 +178,7 @@
                            :limit               500
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected (-> selected-context :data :views :current))
+                           :inverted-mode?      (:secondary-contexts-inverted (-> selected-context :data :views :current))
                            :join-ids            (when-not link-issue? 
                                                   (join-ids selected-context))
                            :or-mode? (or-mode? selected-context)}))]

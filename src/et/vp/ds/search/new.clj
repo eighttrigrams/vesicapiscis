@@ -13,16 +13,21 @@
     [:<> :issues.date nil]))
 
 (defn- and-query 
-  [join-ids unassigned-mode?]
-  [:in :issues.id
-   (merge {:select   :issues.id
-           :from     [:issues]
-           :join     [:collections [:= :issues.id :collections.item_id]]
-           :group-by :issues.id
-           :having   [:raw (str "COUNT(issues.id) = " 
-                                (if unassigned-mode? 1
-                                    (count join-ids)))]}
-          (when-not unassigned-mode? {:where [:in :collections.container_id [:inline join-ids]]}))])
+  [join-ids unassigned-mode? inverted-mode?]
+  (let [r
+        [:in :issues.id
+         (merge {:select   :issues.id
+                 :from     [:issues]
+                 :join     [:collections [:= :issues.id :collections.item_id]]
+                 :group-by :issues.id
+                 :having   [:raw (str "COUNT(issues.id) = " 
+                                      (if unassigned-mode? 1
+                                          (count join-ids)))]}
+                (when-not unassigned-mode? {:where [:in :collections.container_id [:inline join-ids]]}))]
+        ]
+    (if inverted-mode?
+      [:not r]
+      r)))
 
 (defn- or-query 
   [join-ids]
@@ -58,7 +63,8 @@
              join-ids
              search-mode
              or-mode?
-             unassigned-mode?]
+             unassigned-mode?
+             inverted-mode?]
     :as opts}]
   (let [join-ids (when selected-context-id join-ids)
         or-mode? (when join-ids or-mode?)
@@ -67,16 +73,17 @@
                    (vec (concat join-ids [selected-context-id]))
                    join-ids)
         ]
+    #_(prn "un" unassigned-mode? join-ids)
     (merge 
      {:select (if selected-context-id
                 (vec (concat search.core/select [:collections.annotation]))
                 search.core/select)
       :from   :issues
       :where  [:and
-               (when join-ids
+               (when (or join-ids unassigned-mode?)
                  (if or-mode? 
                    (or-query join-ids) 
-                   (and-query join-ids unassigned-mode?)))
+                   (and-query join-ids unassigned-mode? inverted-mode?)))
                (get-search-clause q)
                (get-events-exist-clause search-mode)
                (when selected-context-id
