@@ -143,7 +143,7 @@
         secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? no-modifiers-selected?)
         join-ids (if link-issue?
                     selected-secondary-contexts
-                    (when selected-context
+                    (when selected-context ;; <- why is this here necessary?
                       (vec (concat (when secondary-contexts-but-no-modifiers-selected?
                                      selected-secondary-contexts)
                                    [(:id selected-context)]))))
