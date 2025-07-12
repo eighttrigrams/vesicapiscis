@@ -156,6 +156,7 @@
                                              {:selected-context selected-context
                                               :join-ids         join-ids
                                               :force-limit?     link-issue
+                                              :limit            500
                                               :search-mode      search-mode
                                               :and-query?       and-query?}))]
     (seq issues-ids)))

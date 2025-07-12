@@ -38,11 +38,12 @@
                                :desc)])))])
 
 (defn- limit [q {:keys [selected-context
-                      force-limit?]}]
+                        force-limit?
+                        limit]}]
   (when (or (and (= "" q)
                  (not selected-context))
              force-limit?)
-     {:limit 500}))
+     {:limit limit}))
 
 (defn- wrap-given-issues-query-with-limit
   [q {:keys [selected-context
