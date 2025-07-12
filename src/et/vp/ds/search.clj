@@ -135,8 +135,10 @@
 (defn- join-ids [selected-context]
   (let [current-view                (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)] 
-    (when (or (no-modifiers-selected? current-view) 
-              (not (:secondary-contexts-unassigned-selected current-view)))
+    (when (and (seq selected-secondary-contexts)  
+               (or (no-modifiers-selected? current-view)
+                   (and (:secondary-contexts-inverted current-view)
+                        (not (:secondary-contexts-unassigned-selected current-view)))))
       selected-secondary-contexts)))
 
 (defn- or-mode? [selected-context]
