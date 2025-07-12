@@ -123,7 +123,9 @@
     (if (or link-issue 
             (no-modifiers-selected? current-view)
             (and secondary-contexts-inverted
-                 (not secondary-contexts-unassigned-selected)))
+                 (not secondary-contexts-unassigned-selected))
+            (and secondary-contexts-unassigned-selected
+                 (not secondary-contexts-inverted))) 
       issues
       (filter-by-selected-secondary-contexts' current-view issues))))
 

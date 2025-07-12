@@ -163,7 +163,7 @@
                                   ;; when contexts list present, the following should have no effect
                                             :secondary-contexts-unassigned-selected true})))
       ;; TODO fix this; this depends on data.contexts to be set properly
-      #_(is (= "title-4" (q item-1 {:secondary-contexts-unassigned-selected true})))))
+      #_(is (= #{"title-4"} (q-titles item-1 {:secondary-contexts-unassigned-selected true})))))
   (test-with-reset-db-and-time "base case - or"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
       (is (= #{"title-4"} 
