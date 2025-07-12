@@ -117,8 +117,7 @@
    
    issues]
   (let [{:keys [secondary-contexts-unassigned-selected
-                secondary-contexts-inverted
-                selected-secondary-contexts]
+                secondary-contexts-inverted]
          :as current-view} 
           (-> selected-context :data :views :current)]
     (if (or link-issue 
