@@ -114,24 +114,17 @@
 
 (defn- filter-by-selected-secondary-contexts 
   [{:keys [link-issue selected-context]}
-   
    issues]
   (let [{:keys [secondary-contexts-unassigned-selected
-                secondary-contexts-inverted
-                selected-secondary-contexts]
+                secondary-contexts-inverted]
          :as current-view} 
           (-> selected-context :data :views :current)]
-    (if (or link-issue 
-            (no-modifiers-selected? current-view)
-            (and secondary-contexts-inverted
-                 (not secondary-contexts-unassigned-selected))
-            (and secondary-contexts-unassigned-selected
-                 (not secondary-contexts-inverted))
-            (and secondary-contexts-inverted
-                 secondary-contexts-unassigned-selected
-                 (not (seq selected-secondary-contexts))))
-      issues
-      (filter-by-selected-secondary-contexts' current-view issues))))
+    (if (and (not link-issue)
+             (not (no-modifiers-selected? current-view))
+             (or (not secondary-contexts-unassigned-selected)
+                 secondary-contexts-inverted))
+      (filter-by-selected-secondary-contexts' current-view issues)
+      issues)))
 
 (defn- do-query [db formatted-query]
   #_(prn "???" formatted-query)
@@ -152,16 +145,6 @@
   (let [current-view (-> selected-context :data :views :current)]
     (and (:secondary-contexts-inverted current-view) 
          (not (:secondary-contexts-unassigned-selected current-view)))))
-
-(defn modify [selected-context]
-  (when selected-context
-    (let [current-view (-> selected-context :data :views :current)]
-      (if (and (seq (:selected-secondary-contexts current-view))  
-               (:secondary-contexts-unassigned-selected current-view)
-               (not (:secondary-contexts-inverted current-view)))
-        (assoc-in selected-context 
-                  [:data :views :current :secondary-contexts-unassigned-selected] nil)
-        selected-context))))
 
 (defn- do-fetch-ids 
   [db {:keys [selected-context link-issue?]
@@ -276,6 +259,15 @@
                                        opts 
                                        highlighted-secondary-contexts)))))
 
+(defn modify [selected-context]
+  (when selected-context
+    (let [current-view (-> selected-context :data :views :current)]
+      (if (and (seq (:selected-secondary-contexts current-view))  
+               (:secondary-contexts-unassigned-selected current-view)
+               (not (:secondary-contexts-inverted current-view)))
+        (assoc-in selected-context 
+                  [:data :views :current :secondary-contexts-unassigned-selected] nil)
+        selected-context))))
 
 (defn search-issues [db opts]
   (sectime
