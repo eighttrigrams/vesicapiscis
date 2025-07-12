@@ -159,7 +159,8 @@
   (when selected-context
     (let [current-view (-> selected-context :data :views :current)]
       (if (and (seq (:selected-secondary-contexts current-view))  
-               (:secondary-contexts-unassigned-selected current-view))
+               (:secondary-contexts-unassigned-selected current-view)
+               (not (:secondary-contexts-inverted current-view)))
         (assoc-in selected-context 
                   [:data :views :current :secondary-contexts-unassigned-selected] nil)
         selected-context))))
