@@ -130,6 +130,7 @@
       (filter-by-selected-secondary-contexts' current-view issues))))
 
 (defn- do-query [db formatted-query]
+  #_(prn "???" formatted-query)
   (let [issues (jdbc/execute! db formatted-query)]
     #_(log/info (str "count: " (count issues)))
     issues))
@@ -137,12 +138,17 @@
 (defn- join-ids [selected-context]
   (let [current-view (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)]
-    (when (and (seq selected-secondary-contexts)  
-               (or (no-modifiers-selected? current-view)
+    (if 
+     (and (:secondary-contexts-unassigned-selected current-view)
+          (empty? selected-secondary-contexts)
+          (not (:secondary-contexts-inverted current-view)))
+      []
+      (when (and (seq selected-secondary-contexts)  
+                 (or (no-modifiers-selected? current-view)
                    ;; TODO simplify
-                   (and (:secondary-contexts-inverted current-view)
-                        (not (:secondary-contexts-unassigned-selected current-view)))))
-      selected-secondary-contexts)))
+                     (and (:secondary-contexts-inverted current-view)
+                          (not (:secondary-contexts-unassigned-selected current-view)))))
+        selected-secondary-contexts))))
 
 (defn- or-mode? [selected-context]
   (let [current-view (-> selected-context :data :views :current)]
@@ -152,7 +158,7 @@
 (defn modify [selected-context]
   (when selected-context
     (let [current-view (-> selected-context :data :views :current)]
-      (if (and (:selected-secondary-contexts current-view)  
+      (if (and (seq (:selected-secondary-contexts current-view))  
                (:secondary-contexts-unassigned-selected current-view))
         (assoc-in selected-context 
                   [:data :views :current :secondary-contexts-unassigned-selected] nil)
@@ -164,7 +170,7 @@
   (let [
         selected-context-id (:id selected-context)
         _ (when (and (some? selected-context) (not selected-context-id))
-            (log/error (str "weird!" link-issue? (some? selected-context) (some? selected-context-id))))
+            (log/error (str "weird!" link-issue? (some? selected-context) (some? selected-context-id)))) 
         issues (do-query db 
                          (search.new/fetch-issues 
                           (or (:q state) "") 
@@ -172,6 +178,7 @@
                            :force-limit?        link-issue?
                            :limit               500
                            :search-mode         search-mode
+                           :unassigned-mode?    (:secondary-contexts-unassigned-selected (-> selected-context :data :views :current))
                            :join-ids            (when-not link-issue? 
                                                   (join-ids selected-context))
                            :or-mode? (or-mode? selected-context)}))]

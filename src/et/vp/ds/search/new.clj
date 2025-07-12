@@ -13,14 +13,16 @@
     [:<> :issues.date nil]))
 
 (defn- and-query 
-  [join-ids]
+  [join-ids unassigned-mode?]
   [:in :issues.id
-   {:select   :issues.id
-    :from     [:issues]
-    :where    [:in :collections.container_id [:inline join-ids]]
-    :join     [:collections [:= :issues.id :collections.item_id]]
-    :group-by :issues.id
-    :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]}])
+   (merge {:select   :issues.id
+           :from     [:issues]
+           :join     [:collections [:= :issues.id :collections.item_id]]
+           :group-by :issues.id
+           :having   [:raw (str "COUNT(issues.id) = " 
+                                (if unassigned-mode? 1
+                                    (count join-ids)))]}
+          (when-not unassigned-mode? {:where [:in :collections.container_id [:inline join-ids]]}))])
 
 (defn- or-query 
   [join-ids]
@@ -55,11 +57,12 @@
   [q {:keys [selected-context-id
              join-ids
              search-mode
-             or-mode?]
+             or-mode?
+             unassigned-mode?]
     :as opts}]
   (let [join-ids (when selected-context-id join-ids)
         or-mode? (when join-ids or-mode?)
-        ;; not necessary?
+        ;; why is this not used?
         #_#_join-ids (if-not or-mode?
                    (vec (concat join-ids [selected-context-id]))
                    join-ids)
@@ -73,7 +76,7 @@
                (when join-ids
                  (if or-mode? 
                    (or-query join-ids) 
-                   (and-query join-ids)))
+                   (and-query join-ids unassigned-mode?)))
                (get-search-clause q)
                (get-events-exist-clause search-mode)
                (when selected-context-id
