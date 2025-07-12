@@ -126,40 +126,39 @@
     issues))
 
 (defn- do-fetch-ids 
-  [db {:keys [search-globally? selected-context link-issue?]
+  [db {:keys [;; TODO remove this property everywhere
+              _search-globally? selected-context link-issue?]
        :as   state} search-mode]
-  (let [current-view (-> selected-context :data :views :current)
+  (let [selected-context (when-not link-issue?
+                           (if 
+                            (:id selected-context) 
+                             selected-context
+                             (do (log/error (str "weird!" _search-globally? link-issue? (some? selected-context) (some? (:id selected-context))))
+                                 nil)))
+        current-view (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)
-        selected-context (if (and search-globally?
-                                  (not 
-                                   (and link-issue?
-                                        (seq selected-secondary-contexts)))) 
-                           nil 
-                           (when (:id selected-context) selected-context))
-        no-modifier-selected? (-> current-view :selected-secondary-contexts seq)
-        secondary-contexts-but-no-modifiers-selected? 
+        selected-secondary-contexts? (-> current-view :selected-secondary-contexts seq)
+        no-modifiers-selected? 
           (let [{:keys [secondary-contexts-inverted
                         secondary-contexts-unassigned-selected]} current-view]
-            (and no-modifier-selected?         
-                 (not (or secondary-contexts-inverted
-                          secondary-contexts-unassigned-selected))))
-        join-ids (when selected-context
-                   (if link-issue?
-                     selected-secondary-contexts
-                     (vec (concat (when secondary-contexts-but-no-modifiers-selected?
-                                    selected-secondary-contexts)
-                                  [(:id selected-context)])))) 
-        and-query? (or (and selected-context link-issue?) 
-                       secondary-contexts-but-no-modifiers-selected?)
+            (not (or secondary-contexts-inverted
+                     secondary-contexts-unassigned-selected)))
+        secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? no-modifiers-selected?)
+        join-ids (if link-issue?
+                    selected-secondary-contexts
+                    (when selected-context
+                      (vec (concat (when secondary-contexts-but-no-modifiers-selected?
+                                     selected-secondary-contexts)
+                                   [(:id selected-context)]))))
         issues-ids (do-query db 
                              (search.new/fetch-issues 
                                              (or (:q state) "") 
                                              {:selected-context selected-context
-                                              :join-ids         join-ids
                                               :force-limit?     link-issue?
                                               :limit            500
                                               :search-mode      search-mode
-                                              :and-query?       and-query?}))]
+                                              :join-ids         join-ids
+                                              :and-query?       secondary-contexts-but-no-modifiers-selected?}))]
     (seq issues-ids)))
 
 (defn- filter-issues
