@@ -116,9 +116,15 @@
   [{:keys [link-issue selected-context]}
    
    issues]
-  (let [current-view (-> selected-context :data :views :current)]
+  (let [{:keys [secondary-contexts-unassigned-selected
+                secondary-contexts-inverted]
+         :as current-view} 
+          (-> selected-context :data :views :current)]
     (if (or link-issue 
-            (no-modifiers-selected? current-view))
+            (no-modifiers-selected? current-view)
+            ;; TODO simplify
+            (and secondary-contexts-inverted
+                 (not secondary-contexts-unassigned-selected)))
       issues
       (filter-by-selected-secondary-contexts' current-view issues))))
 
@@ -131,8 +137,16 @@
   (let [current-view (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)]
     (when (and (seq selected-secondary-contexts)  
-               (no-modifiers-selected? current-view))
+               (or (no-modifiers-selected? current-view)
+                   ;; TODO simplify
+                   (and (:secondary-contexts-inverted current-view)
+                        (not (:secondary-contexts-unassigned-selected current-view)))))
       selected-secondary-contexts)))
+
+(defn- or-mode? [selected-context]
+  (let [current-view (-> selected-context :data :views :current)]
+    (and (:secondary-contexts-inverted current-view) 
+         (not (:secondary-contexts-unassigned-selected current-view)))))
 
 (defn- do-fetch-ids 
   [db {:keys [selected-context link-issue?]
@@ -140,7 +154,7 @@
   (let [selected-context-id (:id selected-context)
         _ (when (and (some? selected-context) (not selected-context-id))
             (log/error (str "weird!" link-issue? (some? selected-context) (some? selected-context-id))))
-        issues-ids (do-query db 
+        issues (do-query db 
                              (search.new/fetch-issues 
                               (or (:q state) "") 
                               {:selected-context-id selected-context-id
@@ -148,8 +162,9 @@
                                :limit               500
                                :search-mode         search-mode
                                :join-ids            (when-not link-issue? 
-                                                      (join-ids selected-context))}))]
-    (seq issues-ids)))
+                                                      (join-ids selected-context))
+                               :or-mode? (or-mode? selected-context)}))]
+    (seq issues)))
 
 (defn- filter-issues
   [{:keys [link-issue 

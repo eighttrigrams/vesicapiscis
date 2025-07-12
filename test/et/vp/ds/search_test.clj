@@ -26,32 +26,39 @@
                    (java.time.Instant/parse "2025-01-02T05:45:00Z"))]
      ~@body))
 
+(defn- q-all 
+  [selected-context {:keys [q search-mode]
+                      :or {q ""}
+                      :as opts}]
+  (let [search-mode 
+        (case search-mode
+          :last-touched-first 1
+          :past-events 4
+           ;; 5 is missing, it is ""last added"
+          :integer-short-titles-asc 2
+          :integer-short-titles-desc 3
+          0)
+        opts (assoc opts :search-mode search-mode)]
+    (first (search/search-issues 
+            db 
+            (if selected-context
+              {:q q
+               :selected-context 
+               (assoc-in selected-context [:data :views :current] opts)}
+              opts)))))
+
+(defn- q-titles [selected-context opts]
+  (into #{} (map :title (q-all selected-context opts))))
+
 (defn- q
   "This fn is in place because I may want to do the refactoring where
    the search result isn't any longer just the first item of the vector
    but the only result."
   ([selected-context] (q selected-context {}))
-  ([selected-context {:keys [q search-mode]
-                      :or {q ""}
-                      :as opts}]
-   (let [search-mode 
-         (case search-mode
-           :last-touched-first 1
-           :past-events 4
-           ;; 5 is missing, it is ""last added"
-           :integer-short-titles-asc 2
-           :integer-short-titles-desc 3
-           0)
-         opts (assoc opts :search-mode search-mode)]
-     (:title 
-      (ffirst
-       (search/search-issues 
-        db 
-        (if selected-context
-          {:q q
-           :selected-context 
-           (assoc-in selected-context [:data :views :current] opts)}
-          opts)))))))
+  ([selected-context opts]
+   (:title 
+    (first
+     (q-all selected-context opts)))))
 
 (defn- new-item 
   "In place because I want to end up having only new-item, 
@@ -152,7 +159,13 @@
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
       (is (= "title-4" (q item-1 {}))) ;; sanity check
       (is (= "title-3" (q item-1 {:selected-secondary-contexts (list (:id item-2))})))
-      (is (= "title-4" (q item-1 {:selected-secondary-contexts (list (:id item-2))
-                                  :secondary-contexts-inverted true})))
       ;; TODO fix this; this depends on data.contexts to be set properly
-      #_(is (= "title-4" (q item-1 {:secondary-contexts-unassigned-selected true}))))))
+      #_(is (= "title-4" (q item-1 {:secondary-contexts-unassigned-selected true})))))
+  (test-with-reset-db-and-time "base case - or"
+    (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
+      (is (= #{"title-4"} 
+             (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
+                               :secondary-contexts-inverted true})))
+      (is (= #{} 
+             (q-titles item-1 {:selected-secondary-contexts (list (:id item-2) (:id item-1))
+                               :secondary-contexts-inverted true}))))))

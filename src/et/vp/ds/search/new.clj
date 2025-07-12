@@ -15,13 +15,20 @@
 (defn- and-query 
   [join-ids]
   [:in :issues.id
-   (merge
-    {:select   :issues.id
-     :from     [:issues]
-     :where    [:in :collections.container_id [:inline join-ids]]
-     :join     [:collections [:= :issues.id :collections.item_id]]
-     :group-by :issues.id
-     :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})])
+   {:select   :issues.id
+    :from     [:issues]
+    :where    [:in :collections.container_id [:inline join-ids]]
+    :join     [:collections [:= :issues.id :collections.item_id]]
+    :group-by :issues.id
+    :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]}])
+
+(defn- or-query 
+  [join-ids]
+  [:not [:in :issues.id
+         {:select   :issues.id
+          :from     [:issues]
+          :where    [:in :collections.container_id [:inline join-ids]]
+          :join     [:collections [:= :issues.id :collections.item_id]]}]])
 
 (defn- order-by [search-mode]
   [(if (= search-mode 5)
@@ -47,17 +54,24 @@
 (defn- wrap-given-issues-query-with-limit
   [q {:keys [selected-context-id
              join-ids
-             search-mode]
+             search-mode
+             or-mode?]
     :as opts}]
   (let [join-ids (when selected-context-id join-ids)
-        opts (assoc opts :join-ids (vec (concat join-ids [selected-context-id])))]
+        or-mode? (when join-ids or-mode?)
+        opts (if-not or-mode?
+               (assoc opts :join-ids (vec (concat join-ids [selected-context-id])))
+               opts)]
     (merge 
      {:select (if selected-context-id
                 (vec (concat search.core/select [:collections.annotation]))
                 search.core/select)
       :from   :issues
       :where  [:and
-               (when join-ids (and-query join-ids))
+               (when join-ids
+                 (if or-mode? 
+                   (or-query join-ids) 
+                   (and-query join-ids)))
                (get-search-clause q)
                (get-events-exist-clause search-mode)
                (when selected-context-id
