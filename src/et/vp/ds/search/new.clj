@@ -13,13 +13,12 @@
     [:<> :issues.date nil]))
 
 (defn- and-query 
-  [{:keys [join-ids]}]
+  [join-ids]
   [:in :issues.id
    (merge
     {:select   :issues.id
      :from     [:issues]
-     :where    [:and (when
-                      join-ids [:in :collections.container_id [:inline join-ids]])]
+     :where    [:in :collections.container_id [:inline join-ids]]
      :join     [:collections [:= :issues.id :collections.item_id]]
      :group-by :issues.id
      :having   [:raw (str "COUNT(issues.id) = " (count join-ids))]})])
@@ -58,7 +57,7 @@
                 search.core/select)
       :from   :issues
       :where  [:and
-               (when join-ids (and-query opts))
+               (when join-ids (and-query join-ids))
                (get-search-clause q)
                (get-events-exist-clause search-mode)
                (when selected-context-id
