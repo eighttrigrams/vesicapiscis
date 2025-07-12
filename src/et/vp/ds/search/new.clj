@@ -59,9 +59,11 @@
     :as opts}]
   (let [join-ids (when selected-context-id join-ids)
         or-mode? (when join-ids or-mode?)
-        opts (if-not or-mode?
-               (assoc opts :join-ids (vec (concat join-ids [selected-context-id])))
-               opts)]
+        ;; not necessary?
+        #_#_join-ids (if-not or-mode?
+                   (vec (concat join-ids [selected-context-id]))
+                   join-ids)
+        ]
     (merge 
      {:select (if selected-context-id
                 (vec (concat search.core/select [:collections.annotation]))
