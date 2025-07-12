@@ -126,14 +126,13 @@
     issues))
 
 (defn- do-fetch-ids 
-  [db {:keys [;; TODO remove this property everywhere
-              _search-globally? selected-context link-issue?]
+  [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
   (let [selected-context (when-not link-issue?
                            (if 
                             (:id selected-context) 
                              selected-context
-                             (do (log/error (str "weird!" _search-globally? link-issue? (some? selected-context) (some? (:id selected-context))))
+                             (do (log/error (str "weird!" link-issue? (some? selected-context) (some? (:id selected-context))))
                                  nil)))
         current-view (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)
