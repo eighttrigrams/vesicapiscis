@@ -107,18 +107,20 @@
               selected-secondary-contexts-set))))
      issues)))
 
+(defn- no-modifiers-selected? [{:keys [secondary-contexts-unassigned-selected
+                                       secondary-contexts-inverted]}]
+  (not (or secondary-contexts-inverted 
+           secondary-contexts-unassigned-selected)))
+
 (defn- filter-by-selected-secondary-contexts 
   [{:keys [link-issue selected-context]}
    
    issues]
-  (let [current-view-data (-> selected-context :data :views :current)
-        {:keys [secondary-contexts-unassigned-selected
-                secondary-contexts-inverted]} current-view-data]
+  (let [current-view (-> selected-context :data :views :current)]
     (if (or link-issue 
-            (not (or secondary-contexts-inverted
-                     secondary-contexts-unassigned-selected)))
+            (no-modifiers-selected? current-view))
       issues
-      (filter-by-selected-secondary-contexts' current-view-data issues))))
+      (filter-by-selected-secondary-contexts' current-view issues))))
 
 (defn- do-query [db formatted-query]
   (let [issues (jdbc/execute! db formatted-query)]
@@ -135,27 +137,23 @@
         current-view (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)
         selected-secondary-contexts? (-> current-view :selected-secondary-contexts seq)
-        no-modifiers-selected? 
-          (let [{:keys [secondary-contexts-inverted
-                        secondary-contexts-unassigned-selected]} current-view]
-            (not (or secondary-contexts-inverted
-                     secondary-contexts-unassigned-selected)))
-        secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? no-modifiers-selected?)
+        secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? 
+                                                           (no-modifiers-selected? current-view))
         join-ids (if link-issue?
-                    selected-secondary-contexts
-                    (when selected-context ;; <- why is this here necessary?
-                      (vec (concat (when secondary-contexts-but-no-modifiers-selected?
-                                     selected-secondary-contexts)
-                                   [(:id selected-context)]))))
+                   selected-secondary-contexts
+                   (when selected-context ;; <- why is this here necessary?
+                     (vec (concat (when secondary-contexts-but-no-modifiers-selected?
+                                    selected-secondary-contexts)
+                                  [(:id selected-context)]))))
         issues-ids (do-query db 
                              (search.new/fetch-issues 
-                                             (or (:q state) "") 
-                                             {:selected-context selected-context
-                                              :force-limit?     link-issue?
-                                              :limit            500
-                                              :search-mode      search-mode
-                                              :join-ids         join-ids
-                                              :and-query?       secondary-contexts-but-no-modifiers-selected?}))]
+                              (or (:q state) "") 
+                              {:selected-context selected-context
+                               :force-limit?     link-issue?
+                               :limit            500
+                               :search-mode      search-mode
+                               :join-ids         join-ids
+                               :and-query?       secondary-contexts-but-no-modifiers-selected?}))]
     (seq issues-ids)))
 
 (defn- filter-issues
