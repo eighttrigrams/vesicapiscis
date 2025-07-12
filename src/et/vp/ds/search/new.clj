@@ -50,7 +50,7 @@
              join-ids
              search-mode]
     :as opts}]
-  (let [and-query? selected-context
+  (let [join-ids (when selected-context join-ids)
         opts (assoc opts :join-ids (vec (concat join-ids [(:id selected-context)])))]
     (merge 
      {:select (if selected-context 
@@ -58,16 +58,16 @@
                 search.core/select)
       :from   :issues
       :where  [:and
-               (when and-query? (and-query opts))
+               (when join-ids (and-query opts))
                (get-search-clause q)
                (get-events-exist-clause search-mode)
-               (when and-query? 
+               (when selected-context
                  [:= :collections.container_id [:raw (:id selected-context)]])
                (when (or (= 2 search-mode) (= 3 search-mode))
                  [:> :short_title_ints 0])]}
      {:order-by (order-by search-mode)}
      (limit q opts)
-     (when and-query?
+     (when selected-context
        {:join [:collections [:= :issues.id :collections.item_id]]}))))
 
 (defn fetch-issues
