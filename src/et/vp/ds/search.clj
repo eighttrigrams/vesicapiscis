@@ -125,7 +125,6 @@
     #_(log/info (str "count: " (count issues)))
     issues))
 
-;; TODO get rid of serach-globally? everywhere
 (defn- do-fetch-ids 
   [db {:keys [search-globally? selected-context link-issue?]
        :as   state} search-mode]
@@ -137,28 +136,30 @@
                                         (seq selected-secondary-contexts)))) 
                            nil 
                            (when (:id selected-context) selected-context))
-        selected-secondary-contexts? (-> current-view :selected-secondary-contexts seq)
-        no-modifiers-selected? 
+        no-modifier-selected? (-> current-view :selected-secondary-contexts seq)
+        secondary-contexts-but-no-modifiers-selected? 
           (let [{:keys [secondary-contexts-inverted
                         secondary-contexts-unassigned-selected]} current-view]
-            (not (or secondary-contexts-inverted
-                     secondary-contexts-unassigned-selected)))
-        secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? no-modifiers-selected?) 
-        join-ids (if link-issue?
-                   selected-secondary-contexts?
-                   (when selected-context ;; <- why is this necessary?
+            (and no-modifier-selected?         
+                 (not (or secondary-contexts-inverted
+                          secondary-contexts-unassigned-selected))))
+        join-ids (when selected-context
+                   (if link-issue?
+                     selected-secondary-contexts
                      (vec (concat (when secondary-contexts-but-no-modifiers-selected?
-                                    selected-secondary-contexts?)
-                                  [(:id selected-context)]))))
+                                    selected-secondary-contexts)
+                                  [(:id selected-context)])))) 
+        and-query? (or (and selected-context link-issue?) 
+                       secondary-contexts-but-no-modifiers-selected?)
         issues-ids (do-query db 
                              (search.new/fetch-issues 
                                              (or (:q state) "") 
                                              {:selected-context selected-context
+                                              :join-ids         join-ids
                                               :force-limit?     link-issue?
                                               :limit            500
                                               :search-mode      search-mode
-                                              :join-ids         join-ids
-                                              :and-query?       (or link-issue? secondary-contexts-but-no-modifiers-selected?)}))]
+                                              :and-query?       and-query?}))]
     (seq issues-ids)))
 
 (defn- filter-issues
