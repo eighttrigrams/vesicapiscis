@@ -128,12 +128,10 @@
 (defn- do-fetch-ids 
   [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
+  (when (and (some? selected-context) (not (:id selected-context)))
+    (log/error (str "weird!" link-issue? (some? selected-context) (some? (:id selected-context)))))
   (let [selected-context (when-not link-issue?
-                           (if 
-                            (:id selected-context) 
-                             selected-context
-                             (do (log/error (str "weird!" link-issue? (some? selected-context) (some? (:id selected-context))))
-                                 nil)))
+                           (when (:id selected-context) selected-context))
         current-view (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)
         selected-secondary-contexts? (-> current-view :selected-secondary-contexts seq)
