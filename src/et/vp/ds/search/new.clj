@@ -47,9 +47,9 @@
 
 (defn- wrap-given-issues-query-with-limit
   [q {:keys [selected-context
-           join-ids
-           search-mode
-           and-query?]
+             join-ids
+             search-mode
+             and-query?]
     :as opts}]
   (merge 
    {:select (if selected-context 

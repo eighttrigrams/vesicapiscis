@@ -109,13 +109,14 @@
 
 (defn- filter-by-selected-secondary-contexts 
   [{:keys [link-issue selected-context]}
+   
    issues]
   (let [current-view-data (-> selected-context :data :views :current)
         {:keys [secondary-contexts-unassigned-selected
                 secondary-contexts-inverted]} current-view-data]
     (if (or link-issue 
-            (and (not secondary-contexts-inverted) 
-                 (not secondary-contexts-unassigned-selected)))
+            (not (or secondary-contexts-inverted
+                     secondary-contexts-unassigned-selected)))
       issues
       (filter-by-selected-secondary-contexts' current-view-data issues))))
 
@@ -124,41 +125,40 @@
     #_(log/info (str "count: " (count issues)))
     issues))
 
+;; TODO get rid of serach-globally? everywhere
 (defn- do-fetch-ids 
-  [db {:keys [search-globally? selected-context link-issue]
+  [db {:keys [search-globally? selected-context link-issue?]
        :as   state} search-mode]
-  (let [selected-secondary-contexts (-> selected-context :data :views :current :selected-secondary-contexts)
+  (let [current-view (-> selected-context :data :views :current)
+        selected-secondary-contexts (-> current-view :selected-secondary-contexts)
         selected-context (if (and search-globally?
                                   (not 
-                                   (and (= :context link-issue)
+                                   (and link-issue?
                                         (seq selected-secondary-contexts)))) 
                            nil 
                            (when (:id selected-context) selected-context))
-        secondary-contexts-but-no-modifiers-selected? (let [{{{{:keys [selected-secondary-contexts
-                                            secondary-contexts-inverted
-                                            secondary-contexts-unassigned-selected]} :current} :views} :data} selected-context]
-                             (not (or secondary-contexts-inverted
-                                      secondary-contexts-unassigned-selected
-                                      (not (seq selected-secondary-contexts)))))
-        join-ids (if selected-context
-                   (if link-issue
-                     selected-secondary-contexts
-                     (if secondary-contexts-but-no-modifiers-selected?
-                       (conj selected-secondary-contexts
-                             (:id selected-context))
-                       [(:id selected-context)]))
-                   nil) 
-        and-query? (or (and selected-context (= :context link-issue)) 
-                       secondary-contexts-but-no-modifiers-selected?)
+        selected-secondary-contexts? (-> current-view :selected-secondary-contexts seq)
+        no-modifiers-selected? 
+          (let [{:keys [secondary-contexts-inverted
+                        secondary-contexts-unassigned-selected]} current-view]
+            (not (or secondary-contexts-inverted
+                     secondary-contexts-unassigned-selected)))
+        secondary-contexts-but-no-modifiers-selected? (and selected-secondary-contexts? no-modifiers-selected?) 
+        join-ids (if link-issue?
+                   selected-secondary-contexts?
+                   (when selected-context ;; <- why is this necessary?
+                     (vec (concat (when secondary-contexts-but-no-modifiers-selected?
+                                    selected-secondary-contexts?)
+                                  [(:id selected-context)]))))
         issues-ids (do-query db 
                              (search.new/fetch-issues 
                                              (or (:q state) "") 
                                              {:selected-context selected-context
-                                              :join-ids         join-ids
-                                              :force-limit?     link-issue
+                                              :force-limit?     link-issue?
                                               :limit            500
                                               :search-mode      search-mode
-                                              :and-query?       and-query?}))]
+                                              :join-ids         join-ids
+                                              :and-query?       (or link-issue? secondary-contexts-but-no-modifiers-selected?)}))]
     (seq issues-ids)))
 
 (defn- filter-issues
@@ -256,7 +256,8 @@
 (defn search-issues [db opts]
   (sectime
    "search-issues"
-   (let [opts (
+   (let [opts (assoc opts :link-issue? (= :context (:link-issue opts)))
+         opts (
                 ;; TODO instead of doing this, make sure q is always at least ""
                if (:q opts) 
                 (update opts :q search.helpers/remove-some-chars)
