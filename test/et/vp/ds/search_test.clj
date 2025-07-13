@@ -173,6 +173,7 @@
                                :secondary-contexts-inverted true})))))
   (test-with-reset-db-and-time "base case - inverted"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
-      (is (= #{"title-3"}
+      (is (= ;; TODO make these not sets but lists to also check for the correct ordering which still should hold
+           #{"title-3"}
              (q-titles item-1 {:secondary-contexts-inverted true
                                :secondary-contexts-unassigned-selected true}))))))
