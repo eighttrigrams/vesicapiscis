@@ -70,9 +70,12 @@
              or-mode?
              unassigned-mode?
              inverted-mode?
-             exclude-id]
+             exclude-id?]
     :as opts}]
-  (let [join-ids (when selected-context-id join-ids)
+  (let [opts (assoc opts :force-limit? exclude-id?)
+        exclude-id (when exclude-id? selected-context-id)
+        selected-context-id (if-not exclude-id? selected-context-id nil)
+        join-ids (when selected-context-id join-ids)
         or-mode? (when join-ids or-mode?)]
     (merge
      {:select (if selected-context-id

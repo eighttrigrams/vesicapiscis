@@ -143,16 +143,17 @@
         issues (do-query db 
                          (search.new/fetch-issues 
                           (or (:q state) "") 
-                          {:selected-context-id (when-not link-issue? selected-context-id)
-                           :force-limit?        link-issue?
+                          {:selected-context-id selected-context-id
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected (-> selected-context :data :views :current))
                            :inverted-mode?      (:secondary-contexts-inverted (-> selected-context :data :views :current))
-                           :join-ids            (when-not link-issue? 
+                           :join-ids            (when-not 
+                                                 ;; TODO do inside new.clj
+                                                 link-issue? 
                                                   (join-ids selected-context))
                            :or-mode? (or-mode? selected-context)
                            ;; TODO write test
-                           :exclude-id (when link-issue? selected-context-id)}
+                           :exclude-id? link-issue?}
                           {:limit 500}))]
     (seq issues)))
 
