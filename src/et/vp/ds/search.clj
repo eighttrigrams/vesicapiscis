@@ -256,21 +256,27 @@
                                        opts 
                                        highlighted-secondary-contexts)))))
 
-(defn modify [selected-context]
+(defn modify [{:keys [link-issue?]} selected-context]
   (when selected-context
     (let [current-view (-> selected-context :data :views :current)]
-      (if (and (seq (:selected-secondary-contexts current-view))  
-               (:secondary-contexts-unassigned-selected current-view)
-               (not (:secondary-contexts-inverted current-view)))
-        (assoc-in selected-context 
-                  [:data :views :current :secondary-contexts-unassigned-selected] nil)
-        selected-context))))
+      (cond-> selected-context
+        (and (seq (:selected-secondary-contexts current-view))  
+             (:secondary-contexts-unassigned-selected current-view)
+             (not (:secondary-contexts-inverted current-view)))
+        (assoc-in  
+         [:data :views :current :secondary-contexts-unassigned-selected] nil)
+        link-issue?
+        (fn [selected-context]
+          (-> selected-context
+              (assoc-in [:data :views :current :secondary-contexts-unassigned-selected] nil)
+              (assoc-in [:data :views :current :secondary-contexts-inverted] nil)
+              (assoc-in [:data :views :current :selected-secondary-contexts] nil)))))))
 
 (defn search-issues [db opts]
   (sectime
    "search-issues"
    (let [opts (assoc opts :link-issue? (= :context (:link-issue opts)))
-         opts (update opts :selected-context modify)
+         opts (update opts :selected-context (partial modify opts))
          opts (
                 ;; TODO instead of doing this, make sure q is always at least ""
                if (:q opts) 
