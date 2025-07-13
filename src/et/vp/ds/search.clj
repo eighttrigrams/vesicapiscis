@@ -136,7 +136,7 @@
     (and (:secondary-contexts-inverted current-view) 
          (not (:secondary-contexts-unassigned-selected current-view)))))
 
-(defn- do-fetch-ids 
+(defn- do-fetch-issues 
   [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
   (let [selected-context-id (:id selected-context)
@@ -180,7 +180,7 @@
                     :link-issue? (= :context (:link-issue opts))
                     :link-issue nil)
         opts (update opts :selected-context (partial modify opts))]
-    (->> (do-fetch-ids db opts search-mode)
+    (->> (do-fetch-issues db opts search-mode)
          (map post-process)
          (filter-by-selected-secondary-contexts opts)
          (filter-issues-already-related-to-current-context opts))))
