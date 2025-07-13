@@ -36,13 +36,6 @@
       post-process-base
       update-contexts))
 
-(defmacro sectime
-  [what expr]
-  `(let [start# (. System (currentTimeMillis))
-         ret# ~expr]
-     #_(log/info (str "Elapsed time - " ~what ": " (/ (double (- (. System (currentTimeMillis)) start#)) 1000.0) " secs"))
-     ret#))
-
 (defn- query-string-contexts-query [q _selected-context]
   (sql/format (merge {:select [:issues.title
                                :issues.short_title
@@ -112,12 +105,12 @@
            secondary-contexts-unassigned-selected)))
 
 (defn- filter-by-selected-secondary-contexts 
-  [{:keys [link-issue selected-context]}
+  [{:keys [link-issue? selected-context]}
    issues]
   (let [{:keys [secondary-contexts-inverted]
          :as current-view} 
           (-> selected-context :data :views :current)]
-    (if (and (not link-issue)
+    (if (and (not link-issue?)
              (not (no-modifiers-selected? current-view))
              secondary-contexts-inverted)
       (filter-by-selected-secondary-contexts' current-view issues)
@@ -146,40 +139,51 @@
 (defn- do-fetch-ids 
   [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
-  (let [
-        selected-context-id (:id selected-context)
-        _ (when (and (some? selected-context) (not selected-context-id))
-            (log/error (str "weird!" link-issue? (some? selected-context) (some? selected-context-id)))) 
+  (let [selected-context-id (:id selected-context)
         issues (do-query db 
                          (search.new/fetch-issues 
                           (or (:q state) "") 
-                          {:selected-context-id selected-context-id
+                          {:selected-context-id (when-not link-issue? selected-context-id)
                            :force-limit?        link-issue?
-                           :limit               500
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected (-> selected-context :data :views :current))
                            :inverted-mode?      (:secondary-contexts-inverted (-> selected-context :data :views :current))
                            :join-ids            (when-not link-issue? 
                                                   (join-ids selected-context))
-                           :or-mode? (or-mode? selected-context)}))]
+                           :or-mode? (or-mode? selected-context)}
+                          {:limit 500}))]
     (seq issues)))
 
-(defn- filter-issues
-  [{:keys [link-issue 
+;; TODO this can be filtered out in new.clj; write test for this
+(defn- filter-issues-already-related-to-current-context
+  [{:keys [link-issue?
            selected-context]} issues]
-  (if link-issue 
+  (if link-issue?
     (remove #(or ((set (keys (:contexts (:data %)))) (:id selected-context))
-                 (= (:id %) (:id selected-context))) issues)
+                (= (:id %) (:id selected-context))) issues)
     issues))
+
+(defn modify [_opts selected-context]
+  (when selected-context
+    (let [current-view (-> selected-context :data :views :current)]
+      (cond-> selected-context
+        (and (seq (:selected-secondary-contexts current-view))  
+             (:secondary-contexts-unassigned-selected current-view)
+             (not (:secondary-contexts-inverted current-view)))
+        (assoc-in  
+         [:data :views :current :secondary-contexts-unassigned-selected] nil)))))
 
 (defn- search-issues'
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
        :as opts}]
-       (let [issues (do-fetch-ids db opts search-mode)]
-         (->> issues
-              (map post-process)
-              (filter-by-selected-secondary-contexts opts)
-              (filter-issues opts))))
+  (let [opts (assoc opts 
+                    :link-issue? (= :context (:link-issue opts))
+                    :link-issue nil)
+        opts (update opts :selected-context (partial modify opts))]
+    (->> (do-fetch-ids db opts search-mode)
+         (map post-process)
+         (filter-by-selected-secondary-contexts opts)
+         (filter-issues-already-related-to-current-context opts))))
 
 (defn- try-parse [item]
   (try (Integer/parseInt item)
@@ -226,62 +230,35 @@
                                       (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
                                       (assoc-in [:selected-context :data :views :current :secondary-contexts-inverted] false)
                                       (assoc-in [:selected-context :data :views :current :secondary-contexts-unassigned-selected] false)))]
-    (sectime
-     "get-aggregated-contexts#after-search-issues'"
-     (->> issues
-          (map #(get-in % [:data :contexts]))
-          (map #(filter (fn [[_id {:keys [show-badge?]}]] show-badge?) %))
-          (map seq)
-          (apply concat)
-          (group-by first)
-          (map #(do [(count (second %)) (first (second %))]))
-          (sort-by first)
-          reverse
-          (map (fn [[count [id title]]] [id [title count]]))
-          (sort-secondary-contexts db highlighted-secondary-contexts)))))
+    (->> issues
+         (map #(get-in % [:data :contexts]))
+         (map #(filter (fn [[_id {:keys [show-badge?]}]] show-badge?) %))
+         (map seq)
+         (apply concat)
+         (group-by first)
+         (map #(do [(count (second %)) (first (second %))]))
+         (sort-by first)
+         reverse
+         (map (fn [[count [id title]]] [id [title count]]))
+         (sort-secondary-contexts db highlighted-secondary-contexts))))
 
 (defn fetch-aggregated-contexts [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
                                      :as opts}]
-  #_(log/info (str "fetch-aggregated-contects " (:title (:selected-context opts))))
-  (sectime
-   "fetch-aggregated-contexts"
-   (let [opts (
+  (let [opts (
                 ;; TODO instead of doing this, make sure q is always at least ""
-               if (:q opts) 
-                (update opts :q search.helpers/remove-some-chars)
+              if (:q opts) 
+               (update opts :q search.helpers/remove-some-chars)
                  ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
-                (dissoc opts :q))]
-     (sectime "get-aggregated-contexts"
-              (get-aggregated-contexts db 
-                                       opts 
-                                       highlighted-secondary-contexts)))))
-
-(defn modify [{:keys [link-issue?]} selected-context]
-  (when selected-context
-    (let [current-view (-> selected-context :data :views :current)]
-      (cond-> selected-context
-        (and (seq (:selected-secondary-contexts current-view))  
-             (:secondary-contexts-unassigned-selected current-view)
-             (not (:secondary-contexts-inverted current-view)))
-        (assoc-in  
-         [:data :views :current :secondary-contexts-unassigned-selected] nil)
-        link-issue?
-        (fn [selected-context]
-          (-> selected-context
-              (assoc-in [:data :views :current :secondary-contexts-unassigned-selected] nil)
-              (assoc-in [:data :views :current :secondary-contexts-inverted] nil)
-              (assoc-in [:data :views :current :selected-secondary-contexts] nil)))))))
+               (dissoc opts :q))]
+    (get-aggregated-contexts db 
+                             opts 
+                             highlighted-secondary-contexts)))
 
 (defn search-issues [db opts]
-  (sectime
-   "search-issues"
-   (let [opts (assoc opts :link-issue? (= :context (:link-issue opts)))
-         opts (update opts :selected-context (partial modify opts))
-         opts (
+  (let [opts (
                 ;; TODO instead of doing this, make sure q is always at least ""
-               if (:q opts) 
-                (update opts :q search.helpers/remove-some-chars)
+              if (:q opts) 
+               (update opts :q search.helpers/remove-some-chars)
                  ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
-                (dissoc opts :q))]
-     [(sectime "search-issues/issues" 
-               (search-issues' db opts)) {}])))
+               (dissoc opts :q))]
+    [(search-issues' db opts) {}]))

@@ -23,8 +23,7 @@
                  :having   [:raw (str "COUNT(issues.id) = " 
                                       (if unassigned-mode? 1
                                           (count join-ids)))]}
-                (when-not unassigned-mode? {:where [:in :collections.container_id [:inline join-ids]]}))]
-        ]
+                (when-not unassigned-mode? {:where [:in :collections.container_id [:inline join-ids]]}))]]
     (if inverted-mode?
       [:not r]
       r)))
@@ -67,14 +66,8 @@
              inverted-mode?]
     :as opts}]
   (let [join-ids (when selected-context-id join-ids)
-        or-mode? (when join-ids or-mode?)
-        ;; why is this not used?
-        #_#_join-ids (if-not or-mode?
-                   (vec (concat join-ids [selected-context-id]))
-                   join-ids)
-        ]
-    #_(prn "un" unassigned-mode? join-ids)
-    (merge 
+        or-mode? (when join-ids or-mode?)]
+    (merge
      {:select (if selected-context-id
                 (vec (concat search.core/select [:collections.annotation]))
                 search.core/select)
@@ -97,7 +90,8 @@
 
 (defn fetch-issues
   [q 
-   {:as opts}]
+   {:as opts}
+   {:as ctx}]
   (->
-   (wrap-given-issues-query-with-limit q opts)
+   (wrap-given-issues-query-with-limit q (merge opts ctx))
    (sql/format)))
