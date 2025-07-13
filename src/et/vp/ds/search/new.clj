@@ -64,6 +64,9 @@
      {:limit limit}))
 
 (defn- wrap-given-issues-query-with-limit
+  "if exclude-id? is set in opts
+   - will ignore join ids
+   - will limit the results"
   [q {:keys [selected-context-id
              join-ids
              search-mode
@@ -72,9 +75,10 @@
              inverted-mode?
              exclude-id?]
     :as opts}]
-  (let [opts (assoc opts :force-limit? exclude-id?)
+  (let [join-ids (when-not exclude-id? join-ids)
+        opts (assoc opts :force-limit? exclude-id?)
         exclude-id (when exclude-id? selected-context-id)
-        selected-context-id (if-not exclude-id? selected-context-id nil)
+        selected-context-id (when-not exclude-id? selected-context-id)
         join-ids (when selected-context-id join-ids)
         or-mode? (when join-ids or-mode?)]
     (merge

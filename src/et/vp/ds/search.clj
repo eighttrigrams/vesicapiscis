@@ -147,10 +147,7 @@
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected (-> selected-context :data :views :current))
                            :inverted-mode?      (:secondary-contexts-inverted (-> selected-context :data :views :current))
-                           :join-ids            (when-not 
-                                                 ;; TODO do inside new.clj
-                                                 link-issue? 
-                                                  (join-ids selected-context))
+                           :join-ids            (join-ids selected-context)
                            :or-mode? (or-mode? selected-context)
                            ;; TODO write test
                            :exclude-id? link-issue?}
