@@ -6,5 +6,6 @@
              :issues.id
              :issues.data
              :issues.is_context
+             :issues.inserted_at
              :issues.updated_at
              :issues.date])
