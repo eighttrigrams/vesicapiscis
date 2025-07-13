@@ -150,18 +150,11 @@
                            :inverted-mode?      (:secondary-contexts-inverted (-> selected-context :data :views :current))
                            :join-ids            (when-not link-issue? 
                                                   (join-ids selected-context))
-                           :or-mode? (or-mode? selected-context)}
+                           :or-mode? (or-mode? selected-context)
+                           ;; TODO write test
+                           :exclude-id (when link-issue? selected-context-id)}
                           {:limit 500}))]
     (seq issues)))
-
-;; TODO this can be filtered out in new.clj; write test for this
-(defn- filter-issues-already-related-to-current-context
-  [{:keys [link-issue?
-           selected-context]} issues]
-  (if link-issue?
-    (remove #(or ((set (keys (:contexts (:data %)))) (:id selected-context))
-                (= (:id %) (:id selected-context))) issues)
-    issues))
 
 (defn modify [_opts selected-context]
   (when selected-context
@@ -182,8 +175,7 @@
         opts (update opts :selected-context (partial modify opts))]
     (->> (do-fetch-issues db opts search-mode)
          (map post-process)
-         (filter-by-selected-secondary-contexts opts)
-         (filter-issues-already-related-to-current-context opts))))
+         (filter-by-selected-secondary-contexts opts))))
 
 (defn- try-parse [item]
   (try (Integer/parseInt item)

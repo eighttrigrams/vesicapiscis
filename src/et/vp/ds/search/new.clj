@@ -36,6 +36,12 @@
           :where    [:in :collections.container_id [:inline join-ids]]
           :join     [:collections [:= :issues.id :collections.item_id]]}]])
 
+(defn- exclusion-clause [exclude-id]
+  [:not [:in :issues.id
+         {:select :collections.item_id
+          :from   :collections
+          :where  [:= :collections.container_id [:inline exclude-id]]}]])
+
 (defn- order-by [search-mode]
   [(if (= search-mode 5)
      [:issues.inserted_at :desc]
@@ -63,7 +69,8 @@
              search-mode
              or-mode?
              unassigned-mode?
-             inverted-mode?]
+             inverted-mode?
+             exclude-id]
     :as opts}]
   (let [join-ids (when selected-context-id join-ids)
         or-mode? (when join-ids or-mode?)]
@@ -82,7 +89,11 @@
                (when selected-context-id
                  [:= :collections.container_id [:raw selected-context-id]])
                (when (or (= 2 search-mode) (= 3 search-mode))
-                 [:> :short_title_ints 0])]}
+                 [:> :short_title_ints 0])
+               (when exclude-id
+                 (exclusion-clause exclude-id))
+               (when exclude-id
+                  [:<> :issues.id [:inline exclude-id]])]}
      {:order-by (order-by search-mode)}
      (limit q opts)
      (when selected-context-id
