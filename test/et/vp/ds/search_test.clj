@@ -48,7 +48,7 @@
               opts)))))
 
 (defn- q-titles [selected-context opts]
-  (into #{} (map :title (q-all selected-context opts))))
+  (mapv :title (q-all selected-context opts)))
 
 (defn- q
   "This fn is in place because I may want to do the refactoring where
@@ -157,23 +157,23 @@
 (deftest intersections
   (test-with-reset-db-and-time "base case - overview"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
-      (is (= #{"title-3" "title-4"} (q-titles item-1 {}))) ;; sanity check
-      (is (= #{"title-3"} (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))})))
-      (is (= #{"title-4"} (q-titles item-1 {:secondary-contexts-unassigned-selected true})))
-      (is (= #{"title-3"} (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
+      (is (= ["title-4" "title-3"] (q-titles item-1 {}))) ;; sanity check
+      (is (= ["title-3"] (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))})))
+      (is (= ["title-4"] (q-titles item-1 {:secondary-contexts-unassigned-selected true})))
+      (is (= ["title-3"] (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
                                             ;; when contexts list present, the following should have no effect
                                             :secondary-contexts-unassigned-selected true})))))
   (test-with-reset-db-and-time "base case - or"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
-      (is (= #{"title-4"} 
+      (is (= ["title-4"] 
              (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
                                :secondary-contexts-inverted true})))
-      (is (= #{} 
+      (is (= []  
              (q-titles item-1 {:selected-secondary-contexts (list (:id item-2) (:id item-1))
                                :secondary-contexts-inverted true})))))
   (test-with-reset-db-and-time "base case - inverted"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
-      (is (= ;; TODO make these not sets but lists to also check for the correct ordering which still should hold
-           #{"title-3"}
-             (q-titles item-1 {:secondary-contexts-inverted true
-                               :secondary-contexts-unassigned-selected true}))))))
+      (is (= ;; TODO make these not sets but lists to also check for the correct ordering which still should hold 
+           ["title-3"]
+           (q-titles item-1 {:secondary-contexts-inverted true
+                             :secondary-contexts-unassigned-selected true}))))))
