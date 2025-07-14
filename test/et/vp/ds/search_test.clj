@@ -68,7 +68,7 @@
        :as opts}]
   (let [item
         (if context-ids-set
-          (ds/new-issue db title short-title context-ids-set {:suppress-digit-check? true})
+          (ds/new-issue db title short-title context-ids-set)
           (let [new-context (ds/new-context db opts)]
             (when short-title
               (ds/update-item db (assoc new-context :short_title short-title)))))]
