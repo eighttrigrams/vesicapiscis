@@ -163,7 +163,7 @@
       sql/format
       (#(jdbc/execute! db % {:return-keys true}))))
 
-(defn- update-item' [db {:keys [id title short_title tags data] :as item}]
+(defn- update-item' [db {:keys [id title short_title sort_idx tags data] :as item}]
   (log/info "update-item!!!!!!!!!")
   (let [old-item      (get-item db item)
         old-data      (:data old-item)
@@ -180,6 +180,12 @@
                data)
         set           (merge {:title       [:inline title]
                               :short_title [:inline short_title]
+                              :sort_idx    [:inline (try (Integer/parseInt sort_idx)
+                                                         (catch Exception e
+                                                           (log/error (str "This is bad ----- conversion failed" (.getMessage e) "-" (:sort_idx old-item)))
+                                                           (if (integer? (:sort_idx old-item))
+                                                             (:sort_idx old-item)
+                                                             -1)))]
                               :tags        [:inline tags]}
                              (merge {:data [:inline (json/generate-string data)]}))
         formatted-sql (sql/format {:update [:issues]
