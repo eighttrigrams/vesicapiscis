@@ -48,7 +48,7 @@
      (if (= search-mode 4)
        [:issues.date :desc]
        (if (or (= 2 search-mode) (= 3 search-mode))
-         [:issues.short_title_ints (if (= 2 search-mode)
+         [:issues.sort_idx (if (= 2 search-mode)
                                      :asc
                                      :desc)]
          [:issues.updated_at (if (= 1 search-mode)  
@@ -96,7 +96,7 @@
                (when selected-context-id
                  [:= :collections.container_id [:raw selected-context-id]])
                (when (or (= 2 search-mode) (= 3 search-mode))
-                 [:> :short_title_ints 0])
+                 [:> :sort_idx 0])
                (when exclude-id
                  (exclusion-clause exclude-id))
                (when exclude-id

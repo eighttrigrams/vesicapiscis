@@ -2,7 +2,7 @@
 
 (def select [:issues.title
              :issues.short_title
-             :issues.short_title_ints
+             :issues.sort_idx
              :issues.id
              :issues.data
              :issues.is_context

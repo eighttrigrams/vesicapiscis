@@ -39,7 +39,7 @@
 (defn- query-string-contexts-query [q _selected-context]
   (sql/format (merge {:select [:issues.title
                                :issues.short_title
-                               :issues.short_title_ints
+                               :issues.sort_idx
                                :issues.id
                                :issues.data
                                :issues.is_context
