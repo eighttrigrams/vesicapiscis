@@ -1,10 +1,12 @@
 (ns et.vp.ds.search-test
-  (:require [clojure.test :refer [deftest testing is]]
-            [clojure.edn :as edn]
-            [next.jdbc :as jdbc]
-            [et.vp.ds :as ds]
-            [et.vp.ds.search :as search]
-            [et.vp.ds.helpers :as helpers]))
+  (:require
+   [clojure.edn :as edn]
+   [clojure.test :refer [deftest is testing]]
+   [et.vp.ds :as ds]
+   [et.vp.ds.helpers :as helpers]
+   [et.vp.ds.relations :as datastore.relations]
+   [et.vp.ds.search :as search]
+   [next.jdbc :as jdbc]))
 
 (defonce db (edn/read-string (slurp "./test_config.edn")))
 
@@ -177,8 +179,8 @@
         _ (when add-one? (new-item db {:title           "title-6"
                                        :context-ids-set #{(:id item-1) (:id item-5)}}))]
     ;; the test should work with and without this line -- TODO review/reenable
-    #_(relations/set-the-containers-of-item! db 
-                                           item-3
+    #_(datastore.relations/set-the-containers-of-item! db 
+                                           _item-3
                                            {(:id item-1) {:annotation "a"}
                                             (:id item-2) {:annotation nil}}
                                            false)
