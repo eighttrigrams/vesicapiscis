@@ -164,7 +164,7 @@
       (#(jdbc/execute! db % {:return-keys true}))))
 
 (defn- update-item' [db {:keys [id title short_title sort_idx tags data] :as item}]
-  (log/info "update-item!!!!!!!!!")
+  (log/info (str "update-item!!!!!!!!!" sort_idx "<-" (integer? sort_idx)))
   (let [old-item      (get-item db item)
         old-data      (:data old-item)
         data          (if data
@@ -180,12 +180,16 @@
                data)
         set           (merge {:title       [:inline title]
                               :short_title [:inline short_title]
-                              :sort_idx    [:inline (try (Integer/parseInt sort_idx)
-                                                         (catch Exception e
-                                                           (log/error (str "This is bad ----- conversion failed" (.getMessage e) "-" (:sort_idx old-item)))
-                                                           (if (integer? (:sort_idx old-item))
-                                                             (:sort_idx old-item)
-                                                             -1)))]
+                              :sort_idx    [:inline (if 
+                                                     ;; i think this is for when we are in tests or something
+                                                     (integer? sort_idx)
+                                                      sort_idx
+                                                      (try (Integer/parseInt sort_idx)
+                                                           (catch Exception e
+                                                             (log/error (str "This is bad ----- conversion failed" (.getMessage e) "-" (:sort_idx old-item)))
+                                                             (if (integer? (:sort_idx old-item))
+                                                               (:sort_idx old-item)
+                                                               -1))))]
                               :tags        [:inline tags]}
                              (merge {:data [:inline (json/generate-string data)]}))
         formatted-sql (sql/format {:update [:issues]
