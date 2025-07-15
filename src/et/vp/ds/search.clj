@@ -84,71 +84,56 @@
         (log/error (str "error in search/search-contexts: " e " - param was: " q))
         (throw e)))))
 
-(defn- filter-by-selected-secondary-contexts'
-  [{:keys [selected-secondary-contexts
-           secondary-contexts-unassigned-selected]}
-   issues]
-  (let [selected-secondary-contexts-set (into #{} selected-secondary-contexts)]
-    (remove
-     (fn [issue]
-       (or
-        (and secondary-contexts-unassigned-selected
-             (= 1 (count (:contexts (:data issue))))) 
-        (seq (set/intersection 
-              (set (keys (:contexts (:data issue))))
-              selected-secondary-contexts-set))))
-     issues)))
-
-(defn- no-modifiers-selected? [{:keys [secondary-contexts-unassigned-selected
-                                       secondary-contexts-inverted]}]
-  (not (or secondary-contexts-inverted 
-           secondary-contexts-unassigned-selected)))
-
-(defn- filter-by-selected-secondary-contexts 
-  [{:keys [link-issue? selected-context]}
-   issues]
-  (let [{:keys [secondary-contexts-inverted]
-         :as current-view} 
-          (-> selected-context :data :views :current)]
-    (if (and (not link-issue?)
-             (not (no-modifiers-selected? current-view))
-             secondary-contexts-inverted)
-      (filter-by-selected-secondary-contexts' current-view issues)
-      issues)))
-
 (defn- do-query [db formatted-query]
   #_(prn "???" formatted-query)
   (let [issues (jdbc/execute! db formatted-query)]
     (log/info (str "count: " (count issues)))
     issues))
 
+(defn- no-modifiers-selected? [{:keys [secondary-contexts-unassigned-selected
+                                       secondary-contexts-inverted]}]
+  (not (or secondary-contexts-inverted 
+           secondary-contexts-unassigned-selected)))
+
+;; TODO remove
+(defn- filter-by-selected-secondary-contexts 
+  [{:keys [link-issue? selected-context]}
+   issues]
+  (let [{:keys [secondary-contexts-inverted
+                secondary-contexts-unassigned-selected]
+         :as current-view} 
+          (-> selected-context :data :views :current)]
+    (if (and (not link-issue?)
+             (not (no-modifiers-selected? current-view))
+             secondary-contexts-inverted)
+      (remove
+       #(and secondary-contexts-unassigned-selected
+             (= 1 (count (:contexts (:data %)))))
+       issues)
+      issues)))
+
 (defn- join-ids [selected-context]
   (let [current-view                (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)] 
     (when (and (seq selected-secondary-contexts)  
                (or (no-modifiers-selected? current-view)
-                   (and (:secondary-contexts-inverted current-view)
-                        (not (:secondary-contexts-unassigned-selected current-view)))))
+                   (:secondary-contexts-inverted current-view)))
       selected-secondary-contexts)))
-
-(defn- or-mode? [selected-context]
-  (let [current-view (-> selected-context :data :views :current)]
-    (and (:secondary-contexts-inverted current-view) 
-         (not (:secondary-contexts-unassigned-selected current-view)))))
 
 (defn- do-fetch-issues 
   [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
   (let [selected-context-id (:id selected-context)
+        current-view (-> selected-context :data :views :current)
         issues (do-query db 
                          (search.new/fetch-issues 
                           (or (:q state) "") 
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode
-                           :unassigned-mode?    (:secondary-contexts-unassigned-selected (-> selected-context :data :views :current))
-                           :inverted-mode?      (:secondary-contexts-inverted (-> selected-context :data :views :current))
+                           :unassigned-mode?    (:secondary-contexts-unassigned-selected current-view)
+                           :inverted-mode?      (:secondary-contexts-inverted current-view)
                            :join-ids            (join-ids selected-context)
-                           :or-mode? (or-mode? selected-context)
+                           :or-mode? (:secondary-contexts-inverted current-view)
                            :exclude-id? link-issue?}
                           {:limit 500}))]
     (seq issues)))
