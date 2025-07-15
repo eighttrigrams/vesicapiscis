@@ -178,20 +178,21 @@
                                                     [k (dissoc v :annotation)]))
                                              (into {}))))
                data)
-        set           (merge {:title       [:inline title]
-                              :short_title [:inline short_title]
-                              :sort_idx    [:inline (if 
+        set            {:title       [:inline title]
+                        :short_title [:inline short_title]
+                        :sort_idx    [:inline (if 
                                                      ;; i think this is for when we are in tests or something
-                                                     (integer? sort_idx)
-                                                      sort_idx
-                                                      (try (Integer/parseInt sort_idx)
-                                                           (catch Exception e
-                                                             (log/error (str "This is bad ----- conversion failed" (.getMessage e) "-" (:sort_idx old-item)))
-                                                             (if (integer? (:sort_idx old-item))
-                                                               (:sort_idx old-item)
-                                                               -1))))]
-                              :tags        [:inline tags]}
-                             {:data [:inline (json/generate-string data)]})
+                                               (integer? sort_idx)
+                                                sort_idx
+                                                (try (Integer/parseInt sort_idx)
+                                                     (catch Exception e
+                                                       (log/error (str "This is bad ----- conversion failed" (.getMessage e) "-" (:sort_idx old-item)))
+                                                       (if (integer? (:sort_idx old-item))
+                                                         (:sort_idx old-item)
+                                                         -1))))]
+                        :tags        [:inline tags]
+                        :data        [:inline (json/generate-string data)]}
+        
         formatted-sql (sql/format {:update [:issues]
                                    :where  [:= :id [:inline id]]
                                    :set    set})
