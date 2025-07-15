@@ -196,4 +196,9 @@
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
       (is (= ["title-3"]
              (q-titles item-1 {:secondary-contexts-inverted            true
-                               :secondary-contexts-unassigned-selected true}))))))
+                               :secondary-contexts-unassigned-selected true})))
+      ;; TODO implement
+      #_(is (= []
+             (q-titles item-1 {:secondary-contexts-inverted            true
+                               :secondary-contexts-unassigned-selected true
+                               :selected-secondary-contexts (list (:id item-2))}))))))
