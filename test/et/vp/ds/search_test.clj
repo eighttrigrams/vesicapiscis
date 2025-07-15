@@ -27,7 +27,7 @@
      ~@body))
 
 (defn- q-all 
-  [selected-context {:keys [q search-mode]
+  [selected-context {:keys [q search-mode link-issue]
                       :or {q ""}
                       :as opts}]
   (let [search-mode 
@@ -41,10 +41,12 @@
         opts (assoc opts :search-mode search-mode)]
     (first (search/search-issues 
             db 
+            ;; this is bad!
             (if selected-context
-              {:q q
-               :selected-context 
-               (assoc-in selected-context [:data :views :current] opts)}
+              (merge {:q q
+                      :selected-context 
+                      (assoc-in selected-context [:data :views :current] opts)}
+                     (when link-issue {:link-issue link-issue}))
               opts)))))
 
 (defn- q-titles [selected-context opts]
@@ -140,10 +142,27 @@
      (is (= "title-1-2" (q item-1 {:search-mode :integer-short-titles-asc})))
      (is (= "title-1-1" (q item-1 {:search-mode :integer-short-titles-desc}))))))
 
+(defn- create-issues-for-link-issue-test []
+  (let [item-1    (new-item db {:title       "title-1"})
+        item-2    (new-item db {:title       "title-2"})
+        _item-3 (new-item db {:title           "title-3" 
+                              :context-ids-set #{(:id item-1) 
+                                                 (:id item-2)}})
+        _item-4 (new-item db {:title           "title-4"
+                              :context-ids-set #{(:id item-1)}})]
+    [item-1 item-2]))
+
+(deftest link-issue
+  (test-with-reset-db-and-time
+   "link-issue"
+   (let [[item-1 item-2] (create-issues-for-link-issue-test)]
+     (is (= ["title-2"] (q-titles item-1 {:link-issue :context})))
+     (is (= ["title-4" "title-1"] (q-titles item-2 {:link-issue :context}))))))
+
 (defn- create-issues-for-intersection-tests [{}]
   (let [item-1    (new-item db {:title       "title-1"})
         item-2    (new-item db {:title       "title-2"})
-        item-3 (new-item db {:title           "title-3" 
+        _item-3 (new-item db {:title           "title-3" 
                               :context-ids-set #{(:id item-1) 
                                                  (:id item-2)}})
         _item-4 (new-item db {:title           "title-4"

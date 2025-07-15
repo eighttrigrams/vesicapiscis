@@ -149,7 +149,6 @@
                            :inverted-mode?      (:secondary-contexts-inverted (-> selected-context :data :views :current))
                            :join-ids            (join-ids selected-context)
                            :or-mode? (or-mode? selected-context)
-                           ;; TODO write test
                            :exclude-id? link-issue?}
                           {:limit 500}))]
     (seq issues)))
