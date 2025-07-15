@@ -63,12 +63,12 @@
 (defn- new-item 
   "In place because I want to end up having only new-item, 
    instead new-item and new-context"
-  [db {:keys [title short-title context-ids-set date]
+  [db {:keys [title short-title sort-idx context-ids-set date]
        :or {short-title ""}
        :as opts}]
   (let [item
         (if context-ids-set
-          (ds/new-issue db title short-title context-ids-set)
+          (ds/new-issue db title short-title context-ids-set sort-idx)
           (let [new-context (ds/new-context db opts)]
             (when short-title
               (ds/update-item db (assoc new-context :short_title short-title)))))]
@@ -82,11 +82,13 @@
         item-2    (new-item db {:title       "title-2" 
                                 :short-title "cde"})
         _item-1-1 (new-item db {:title           "title-1-1"
-                                :short-title     (if-not integer-short-titles? "abc" "2")
+                                :short-title "abc"
+                                :sort-idx 2
                                 :context-ids-set #{(:id item-1)}
                                 :date            "2025-01-03"})
         _item-1-2 (new-item db {:title           "title-1-2" 
-                                :short-title     (if-not integer-short-titles? "cde" "1")
+                                :short-title "cde"
+                                :sort-idx 1
                                 :context-ids-set #{(:id item-1)}
                                 :date            "2024-12-31"})
         _item-2-1 (new-item db {:title           "title-2-1"
@@ -134,7 +136,7 @@
 (deftest sort-modes
   (test-with-reset-db-and-time 
    "sort ascending and descending (only available in context)"
-   #_(let [[item-1 _item-2] (create-issues {:integer-short-titles? true})]
+   (let [[item-1 _item-2] (create-issues {:integer-short-titles? true})]
      (is (= "title-1-2" (q item-1 {:search-mode :integer-short-titles-asc})))
      (is (= "title-1-1" (q item-1 {:search-mode :integer-short-titles-desc}))))))
 

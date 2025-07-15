@@ -164,7 +164,7 @@
       (#(jdbc/execute! db % {:return-keys true}))))
 
 (defn- update-item' [db {:keys [id title short_title sort_idx tags data] :as item}]
-  (log/info (str "update-item!!!!!!!!!" sort_idx "<-" (integer? sort_idx)))
+  (log/info (str "update-item!!!!!!!!!" title ":" sort_idx "<-" (integer? sort_idx)))
   (let [old-item      (get-item db item)
         old-data      (:data old-item)
         data          (if data
@@ -178,20 +178,23 @@
                                                     [k (dissoc v :annotation)]))
                                              (into {}))))
                data)
-        set            {:title       [:inline title]
-                        :short_title [:inline short_title]
-                        :sort_idx    [:inline (if 
-                                                     ;; i think this is for when we are in tests or something
-                                               (integer? sort_idx)
-                                                sort_idx
-                                                (try (Integer/parseInt sort_idx)
-                                                     (catch Exception e
-                                                       (log/error (str "This is bad ----- conversion failed" (.getMessage e) "-" (:sort_idx old-item)))
-                                                       (if (integer? (:sort_idx old-item))
-                                                         (:sort_idx old-item)
-                                                         -1))))]
-                        :tags        [:inline tags]
-                        :data        [:inline (json/generate-string data)]}
+        set            (merge {:title       [:inline title]
+                              :short_title [:inline short_title]
+                              :tags        [:inline tags]
+                              :data        [:inline (json/generate-string data)]}
+                         (when sort_idx 
+                           {:sort_idx 
+                            [:inline (when sort_idx
+                                       (if 
+                                        ;; i think this is for when we are in tests or something
+                                        (integer? sort_idx)
+                                         sort_idx
+                                         (try (Integer/parseInt sort_idx)
+                                              (catch Exception e
+                                                (log/error (str "This is bad ----- conversion failed" (.getMessage e) "-" (:sort_idx old-item)))
+                                                (if (integer? (:sort_idx old-item))
+                                                  (:sort_idx old-item)
+                                                  -1)))))]}) )
         
         formatted-sql (sql/format {:update [:issues]
                                    :where  [:= :id [:inline id]]
@@ -278,23 +281,32 @@
                                  :set {:updated_at [:raw "NOW()"]}
                                  :where [:= :id [:inline id]]})))
 
-(defn- create-new-issue! [db title short_title]
-  (let [now (helpers/gen-date)]
-    (:issues/id (jdbc/execute-one!
-                 db
-                 (sql/format {:insert-into [:issues]
-                              :columns     [:inserted_at
-                                            :updated_at
-                                            :updated_at_ctx
-                                            :title
-                                            :short_title]
-                              :values      [[[:raw now]
-                                             [:raw now]
-                                             [:raw now]
-                                             title
-                                             short_title]]})
+(defn- create-new-issue! 
+  ([db title short_title]
+   (create-new-issue! db title short_title nil))
+  ([db title short_title sort_idx]
+   (let [now (helpers/gen-date)]
+     (:issues/id (jdbc/execute-one!
+                  db
+                  (sql/format {:insert-into [:issues]
+                               :columns     (concat [:inserted_at
+                                                     :updated_at
+                                                     :updated_at_ctx
+                                                     :title
+                                                     :short_title]
+                                                    (if sort_idx 
+                                                      [:sort_idx]
+                                                      []))
+                               :values      [(concat [[:raw now]
+                                                      [:raw now]
+                                                      [:raw now]
+                                                      title
+                                                      short_title]
+                                                     (if sort_idx 
+                                                       [sort_idx] 
+                                                       []))]})
 
-                 {:return-keys true}))))
+                  {:return-keys true})))))
 
 (defn- insert-issue-relations! [db values]
   (jdbc/execute! db
@@ -306,10 +318,11 @@
   [db 
    title
    short-title
-   context-ids-set]
+   context-ids-set
+   sort-idx]
   (when-not (seq context-ids-set) 
     (throw (Exception. "won't create a new-issue when no contexts")))
-  (let [issue-id (create-new-issue! db title short-title)
+  (let [issue-id (create-new-issue! db title short-title sort-idx)
         values   (vec (doall
                        (map (fn [ctx-id]
                               [[:inline ctx-id]
