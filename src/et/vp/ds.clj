@@ -191,7 +191,7 @@
                                                                (:sort_idx old-item)
                                                                -1))))]
                               :tags        [:inline tags]}
-                             (merge {:data [:inline (json/generate-string data)]}))
+                             {:data [:inline (json/generate-string data)]})
         formatted-sql (sql/format {:update [:issues]
                                    :where  [:= :id [:inline id]]
                                    :set    set})
