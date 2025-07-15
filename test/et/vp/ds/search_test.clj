@@ -159,14 +159,17 @@
      (is (= ["title-2"] (q-titles item-1 {:link-issue :context})))
      (is (= ["title-4" "title-1"] (q-titles item-2 {:link-issue :context}))))))
 
-(defn- create-issues-for-intersection-tests [{}]
+(defn- create-issues-for-intersection-tests [{add-one? :add-one?}]
   (let [item-1    (new-item db {:title       "title-1"})
         item-2    (new-item db {:title       "title-2"})
+        item-5    (new-item db {:title       "title-5"})
         _item-3 (new-item db {:title           "title-3" 
                               :context-ids-set #{(:id item-1) 
                                                  (:id item-2)}})
         _item-4 (new-item db {:title           "title-4"
-                              :context-ids-set #{(:id item-1)}})]
+                              :context-ids-set #{(:id item-1)}})
+        _ (when add-one? (new-item db {:title           "title-6"
+                                       :context-ids-set #{(:id item-1) (:id item-5)}}))]
     ;; the test should work with and without this line -- TODO review/reenable
     #_(relations/set-the-containers-of-item! db 
                                            item-3
@@ -192,13 +195,19 @@
       (is (= []  
              (q-titles item-1 {:selected-secondary-contexts (list (:id item-2) (:id item-1))
                                :secondary-contexts-inverted true})))))
-  (test-with-reset-db-and-time "base case - inverted"
+  (test-with-reset-db-and-time "base case - inverted and unassigned at the same time"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
       (is (= ["title-3"]
              (q-titles item-1 {:secondary-contexts-inverted            true
-                               :secondary-contexts-unassigned-selected true})))
-      ;; TODO implement
+                               :secondary-contexts-unassigned-selected true})))))
+  (test-with-reset-db-and-time "base case - inverted and unassigned at the same time + secondary selected contexts"
+    (let [[item-1 item-2] (create-issues-for-intersection-tests {:add-one? true})]
+      ;; TODO implement the following two tests
       #_(is (= []
-             (q-titles item-1 {:secondary-contexts-inverted            true
-                               :secondary-contexts-unassigned-selected true
-                               :selected-secondary-contexts (list (:id item-2))}))))))
+               (q-titles item-1 {:secondary-contexts-inverted            true
+                                 :secondary-contexts-unassigned-selected true
+                                 :selected-secondary-contexts (list (:id item-2))})))
+      #_(is (= ["title-6"]
+               (q-titles item-1 {:secondary-contexts-inverted            true
+                                 :secondary-contexts-unassigned-selected true
+                                 :selected-secondary-contexts (list (:id item-2))}))))))
