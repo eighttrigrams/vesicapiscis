@@ -15,7 +15,9 @@
 (def time-fn 
   (let [seconds (atom 0)]
     (fn [] 
-      (let [time (str "'2025-01-01 10:00:" (format "%02d" @seconds) "'")]
+      (let [current-seconds (mod @seconds 60)
+            minutes (+ (quot @seconds 60) 0)
+            time (str "'2025-01-01 10:" (format "%02d" minutes) ":" (format "%02d" current-seconds) "'")]
         (swap! seconds inc)
         time))))
 
@@ -34,7 +36,7 @@
         (case search-mode
           :last-touched-first 1
           :past-events 4
-           ;; 5 is missing, it is ""last added"
+          :last-added 5
           :integer-short-titles-asc 2
           :integer-short-titles-desc 3
           0)
@@ -132,8 +134,12 @@
    "in context"
    (let [[_item-1 item-2] (create-issues {})]
      (is (= "title-2-2" (q item-2 {:search-mode :past-events})))))
-  ;; TODO add tests for "last added" (search mode 5)
-  )
+  (test-with-reset-db-and-time 
+   "last added mode"
+   (let [[item-1 item-2] (create-issues {})]
+     (is (= "title-2-2" (q nil {:search-mode :last-added})))
+     (is (= "title-1-2" (q item-1 {:search-mode :last-added})))
+     (is (= "title-2-2" (q item-2 {:search-mode :last-added}))))))
 
 (deftest sort-modes
   (test-with-reset-db-and-time 
