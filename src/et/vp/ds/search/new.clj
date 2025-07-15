@@ -28,13 +28,26 @@
       [:not r]
       r)))
 
+(defn- or-partial [join-ids]
+  {:select :issues.id
+   :from   [:issues]
+   :join   [:collections [:= :issues.id :collections.item_id]]
+   :where  [:in :collections.container_id [:inline join-ids]]})
+
 (defn- or-query 
-  [join-ids]
-  [:not [:in :issues.id
-         {:select   :issues.id
-          :from     [:issues]
-          :where    [:in :collections.container_id [:inline join-ids]]
-          :join     [:collections [:= :issues.id :collections.item_id]]}]])
+  [join-ids unassigned-mode?]
+  (if unassigned-mode?
+    [:and
+     [:not [:in :issues.id
+            (or-partial join-ids)]]
+     [:in :issues.id
+      {:select   :issues.id
+       :from     [:issues]
+       :join     [:collections [:= :issues.id :collections.item_id]]
+       :group-by :issues.id
+       :having   [:raw "COUNT(issues.id) > 1"]}]]
+    [:not [:in :issues.id
+           (or-partial join-ids)]]))
 
 (defn- exclusion-clause [exclude-id]
   [:not [:in :issues.id
@@ -89,7 +102,7 @@
       :where  [:and
                (when (or join-ids unassigned-mode?)
                  (if or-mode? 
-                   (or-query join-ids) 
+                   (or-query join-ids unassigned-mode?) 
                    (and-query join-ids unassigned-mode? inverted-mode?)))
                (get-search-clause q)
                (get-events-exist-clause search-mode)

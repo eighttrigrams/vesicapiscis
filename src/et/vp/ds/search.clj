@@ -95,23 +95,6 @@
   (not (or secondary-contexts-inverted 
            secondary-contexts-unassigned-selected)))
 
-;; TODO remove
-(defn- filter-by-selected-secondary-contexts 
-  [{:keys [link-issue? selected-context]}
-   issues]
-  (let [{:keys [secondary-contexts-inverted
-                secondary-contexts-unassigned-selected]
-         :as current-view} 
-          (-> selected-context :data :views :current)]
-    (if (and (not link-issue?)
-             (not (no-modifiers-selected? current-view))
-             secondary-contexts-inverted)
-      (remove
-       #(and secondary-contexts-unassigned-selected
-             (= 1 (count (:contexts (:data %)))))
-       issues)
-      issues)))
-
 (defn- join-ids [selected-context]
   (let [current-view                (-> selected-context :data :views :current)
         selected-secondary-contexts (-> current-view :selected-secondary-contexts)] 
@@ -156,8 +139,7 @@
                     :link-issue nil)
         opts (update opts :selected-context (partial modify opts))]
     (->> (do-fetch-issues db opts search-mode)
-         (map post-process)
-         (filter-by-selected-secondary-contexts opts))))
+         (map post-process))))
 
 (defn- try-parse [item]
   (try (Integer/parseInt item)

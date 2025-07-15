@@ -201,13 +201,13 @@
              (q-titles item-1 {:secondary-contexts-inverted            true
                                :secondary-contexts-unassigned-selected true})))))
   (test-with-reset-db-and-time "base case - inverted and unassigned at the same time + secondary selected contexts"
-    (let [[item-1 item-2] (create-issues-for-intersection-tests {:add-one? true})]
-      ;; TODO implement the following two tests
-      #_(is (= []
-               (q-titles item-1 {:secondary-contexts-inverted            true
-                                 :secondary-contexts-unassigned-selected true
-                                 :selected-secondary-contexts (list (:id item-2))})))
-      #_(is (= ["title-6"]
-               (q-titles item-1 {:secondary-contexts-inverted            true
-                                 :secondary-contexts-unassigned-selected true
-                                 :selected-secondary-contexts (list (:id item-2))}))))))
+     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
+       (is (= []
+              (q-titles item-1 {:secondary-contexts-inverted            true
+                                :secondary-contexts-unassigned-selected true
+                                :selected-secondary-contexts            (list (:id item-2))}))))
+     (let [[item-1 item-2] (create-issues-for-intersection-tests {:add-one? true})]
+       (is (= ["title-6"]
+              (q-titles item-1 {:secondary-contexts-inverted            true
+                                :secondary-contexts-unassigned-selected true
+                                :selected-secondary-contexts            (list (:id item-2))}))))))
