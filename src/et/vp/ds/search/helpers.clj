@@ -3,19 +3,7 @@
 
 (defn remove-some-chars [q]
   (-> q
-      (str/replace "(" " ")
-      (str/replace ")" " ")
-      (str/replace "[" " ")
-      (str/replace "]" " ")
-      (str/replace "|" " ")
-      (str/replace "!" " ")
-      (str/replace "&" " ")
-      (str/replace "'" " ")
-      (str/replace ":" " ")
-      (str/replace "{" " ")
-      (str/replace "}" " ")
-      (str/replace "  " " ")
-      (str/replace "  " " ")
+      (str/replace #"[()\\[\\]|!&':{}\s]+" " ")
       (str/trim)))
 
 (defn convert-q-to-query-string [q]
