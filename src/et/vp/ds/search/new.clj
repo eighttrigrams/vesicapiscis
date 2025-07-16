@@ -83,7 +83,6 @@
   [q {:keys [selected-context-id
              join-ids
              search-mode
-             or-mode?
              unassigned-mode?
              inverted-mode?
              exclude-id?]
@@ -93,7 +92,7 @@
         exclude-id (when exclude-id? selected-context-id)
         selected-context-id (when-not exclude-id? selected-context-id)
         join-ids (when selected-context-id join-ids)
-        or-mode? (when join-ids or-mode?)]
+        or-mode? (when join-ids inverted-mode?)]
     (merge
      {:select (if selected-context-id
                 (vec (concat search.core/select [:collections.annotation]))

@@ -55,16 +55,18 @@
                                 (= "" (or q "")))
                        {:limit 100}))))
 
+
+(defn- parse-context-id [id]
+  (if (number? id)
+    id
+    (Integer/parseInt (if (keyword? id) (name id) id))))
+
 (defn- filter-contexts [{:keys [link-context selected-context selected-issue]} contexts]
   (if-not link-context
     (remove #(= (:id selected-context) (:id %)) contexts)
-    (let [ids-of-contexts-to-remove (conj (set (map #(if (number? %)
-                                                       %
-                                                       (Integer/parseInt (if (keyword? %) 
-                                                                           (name %) 
-                                                                           %))) 
-                                                    (keys (or (:contexts (:data selected-issue))
-                                                              (:contexts (:data selected-context))))))
+    (let [context-keys (keys (or (:contexts (:data selected-issue))
+                                 (:contexts (:data selected-context))))
+          ids-of-contexts-to-remove (conj (set (map parse-context-id context-keys))
                                           (:id (or selected-issue selected-context)))]
       (remove #(ids-of-contexts-to-remove (:id %)) contexts))))
 
@@ -114,9 +116,8 @@
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected current-view)
-                           :inverted-mode?      (:secondary-contexts-inverted current-view)
                            :join-ids            (join-ids selected-context)
-                           :or-mode? (:secondary-contexts-inverted current-view)
+                           :inverted-mode?      (:secondary-contexts-inverted current-view)
                            :exclude-id? link-issue?}
                           {:limit 500}))]
     (seq issues)))
@@ -148,8 +149,7 @@
 (defn- pre-process-highlighted-secondary-contexts
   [highlighted-secondary-contexts]
   (->> highlighted-secondary-contexts
-       (map try-parse)
-       (remove nil?)))
+       (keep try-parse)))
 
 (defn- calc-highlighted [db 
                          secondary-contexts
