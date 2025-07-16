@@ -1,5 +1,6 @@
 (ns et.vp.ds.search
-  (:require [cambium.core :as log]
+  (:require [clojure.set :as set]
+            [cambium.core :as log]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [et.vp.ds.search.new :as search.new]
@@ -54,19 +55,18 @@
                                 (= "" (or q "")))
                        {:limit 100}))))
 
-(defn- parse-context-id [id]
-  (if (number? id)
-    id
-    (Integer/parseInt (if (keyword? id) (name id) id))))
-
 (defn- filter-contexts [{:keys [link-context selected-context selected-issue]} contexts]
   (if-not link-context
     (remove #(= (:id selected-context) (:id %)) contexts)
-    (let [context-keys (keys (or (:contexts (:data selected-issue))
-                                 (:contexts (:data selected-context))))
-          ids-to-remove (conj (set (map parse-context-id context-keys))
-                              (:id (or selected-issue selected-context)))]
-      (remove #(ids-to-remove (:id %)) contexts))))
+    (let [ids-of-contexts-to-remove (conj (set (map #(if (number? %)
+                                                       %
+                                                       (Integer/parseInt (if (keyword? %) 
+                                                                           (name %) 
+                                                                           %))) 
+                                                    (keys (or (:contexts (:data selected-issue))
+                                                              (:contexts (:data selected-context))))))
+                                          (:id (or selected-issue selected-context)))]
+      (remove #(ids-of-contexts-to-remove (:id %)) contexts))))
 
 (defn search-contexts
   [db opts]
@@ -90,26 +90,34 @@
     (log/info (str "count: " (count issues)))
     issues))
 
+(defn- no-modifiers-selected? [{:keys [secondary-contexts-unassigned-selected
+                                       secondary-contexts-inverted]}]
+  (not (or secondary-contexts-inverted 
+           secondary-contexts-unassigned-selected)))
+
+(defn- join-ids [selected-context]
+  (let [current-view                (-> selected-context :data :views :current)
+        selected-secondary-contexts (-> current-view :selected-secondary-contexts)] 
+    (when (and (seq selected-secondary-contexts)  
+               (or (no-modifiers-selected? current-view)
+                   (:secondary-contexts-inverted current-view)))
+      selected-secondary-contexts)))
+
 (defn- do-fetch-issues 
   [db {:keys [selected-context link-issue?]
        :as   state} search-mode]
   (let [selected-context-id (:id selected-context)
-        {:keys [secondary-contexts-unassigned-selected
-                secondary-contexts-inverted
-                selected-secondary-contexts] :as _current-view} (-> selected-context :data :views :current)
-        opts {:selected-context-id selected-context-id
-              :search-mode         search-mode
-              :unassigned-mode?    secondary-contexts-unassigned-selected
-              ;; TODO combine
-              :inverted-mode?      secondary-contexts-inverted
-              :or-mode?            secondary-contexts-inverted
-              ;;
-              :join-ids            selected-secondary-contexts
-              :exclude-id?         link-issue?}
+        current-view (-> selected-context :data :views :current)
         issues (do-query db 
                          (search.new/fetch-issues 
                           (or (:q state) "") 
-                          opts
+                          {:selected-context-id selected-context-id
+                           :search-mode         search-mode
+                           :unassigned-mode?    (:secondary-contexts-unassigned-selected current-view)
+                           :inverted-mode?      (:secondary-contexts-inverted current-view)
+                           :join-ids            (join-ids selected-context)
+                           :or-mode? (:secondary-contexts-inverted current-view)
+                           :exclude-id? link-issue?}
                           {:limit 500}))]
     (seq issues)))
 
@@ -140,7 +148,8 @@
 (defn- pre-process-highlighted-secondary-contexts
   [highlighted-secondary-contexts]
   (->> highlighted-secondary-contexts
-       (keep try-parse)))
+       (map try-parse)
+       (remove nil?)))
 
 (defn- calc-highlighted [db 
                          secondary-contexts
@@ -189,19 +198,23 @@
          (map (fn [[count [id title]]] [id [title count]]))
          (sort-secondary-contexts db highlighted-secondary-contexts))))
 
-(defn- pre-process-opts [opts]
-  (if (:q opts) 
-    (update opts :q search.helpers/remove-some-chars)
-    ;; for destructuring in search-issues' to work properly when :q is present but has nil value
-    (dissoc opts :q)))
-
 (defn fetch-aggregated-contexts [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
                                      :as opts}]
-  (let [opts (pre-process-opts opts)]
+  (let [opts (
+                ;; TODO instead of doing this, make sure q is always at least ""
+              if (:q opts) 
+               (update opts :q search.helpers/remove-some-chars)
+                 ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
+               (dissoc opts :q))]
     (get-aggregated-contexts db 
                              opts 
                              highlighted-secondary-contexts)))
 
 (defn search-issues [db opts]
-  (let [opts (pre-process-opts opts)]
+  (let [opts (
+                ;; TODO instead of doing this, make sure q is always at least ""
+              if (:q opts) 
+               (update opts :q search.helpers/remove-some-chars)
+                 ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
+               (dissoc opts :q))]
     [(search-issues' db opts) {}]))
