@@ -142,7 +142,8 @@
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
        :as opts}]
   (let [opts (assoc opts 
-                    :link-issue? (= :context (:link-issue opts))
+                    ;; TODO remove and just use link-issue, or use link-issue? everywhere
+                    :link-issue? (true? (:link-issue opts))
                     :link-issue nil)
         opts (update opts :selected-context (partial modify opts))]
     (->> (do-fetch-issues db opts search-mode)
