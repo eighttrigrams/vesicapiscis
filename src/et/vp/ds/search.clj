@@ -112,7 +112,7 @@
       selected-secondary-contexts)))
 
 (defn- do-fetch-issues 
-  [db {:keys [selected-context link-issue?]
+  [db {:keys [selected-context link-issue]
        :as   state} search-mode]
   (let [selected-context-id (:id selected-context)
         current-view (-> selected-context :data :views :current)
@@ -124,7 +124,7 @@
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected current-view)
                            :join-ids            (join-ids selected-context)
                            :inverted-mode?      (:secondary-contexts-inverted current-view)
-                           :exclude-id? link-issue?}
+                           :exclude-id? link-issue}
                           {:limit 500}))]
     (seq issues)))
 
@@ -141,11 +141,7 @@
 (defn- search-issues'
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
        :as opts}]
-  (let [opts (assoc opts 
-                    ;; TODO remove and just use link-issue, or use link-issue? everywhere
-                    :link-issue? (true? (:link-issue opts))
-                    :link-issue nil)
-        opts (update opts :selected-context (partial modify opts))]
+  (let [opts (update opts :selected-context (partial modify opts))]
     (->> (do-fetch-issues db opts search-mode)
          (map post-process))))
 
