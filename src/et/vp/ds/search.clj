@@ -31,9 +31,15 @@
                                                               :show-badge? true})])
                           contexts)))))
 
+(defn- post-process' [result]
+  (let [{:keys [annotation issue_annotation] :as r} (post-process-base result)]
+    (cond-> r 
+      (empty? annotation)
+      (assoc :annotation issue_annotation))))
+
 (defn post-process [query-result]
   (-> query-result
-      post-process-base
+      post-process'
       update-contexts))
 
 (defn- query-string-contexts-query [q _selected-context]

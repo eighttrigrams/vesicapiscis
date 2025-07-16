@@ -112,13 +112,7 @@
 (defn get-item
   [db {:keys [id]}]
   (-> (get-issue-without-related-issues db id)
-        post-process)
-  #_(try
-    (-> (get-issue-without-related-issues db id)
-        post-process)
-    #_(catch java.lang.Exception e
-      (prn "get-issue-----" (.getMessage e))
-      (throw e))))
+      post-process))
 
 (defn- basic-title-query [title]
   {:select   [:issues.*]
@@ -163,7 +157,7 @@
       sql/format
       (#(jdbc/execute! db % {:return-keys true}))))
 
-(defn- update-item' [db {:keys [id title short_title sort_idx tags data] :as item}]
+(defn- update-item' [db {:keys [id title short_title annotation sort_idx tags data] :as item}]
   (log/info (str "update-item!!!!!!!!!" title ":" sort_idx "<-" (integer? sort_idx)))
   (let [old-item      (get-item db item)
         old-data      (:data old-item)
@@ -179,9 +173,10 @@
                                              (into {}))))
                data)
         set            (merge {:title       [:inline title]
-                              :short_title [:inline short_title]
-                              :tags        [:inline tags]
-                              :data        [:inline (json/generate-string data)]}
+                               :short_title [:inline short_title] 
+                               :annotation  [:inline annotation]
+                               :tags        [:inline tags]
+                               :data        [:inline (json/generate-string data)]}
                          (when sort_idx 
                            {:sort_idx 
                             [:inline (when sort_idx
