@@ -3,18 +3,7 @@
 
 (defn remove-some-chars [q]
   (-> q
-      (str/replace "(" " ")
-      (str/replace ")" " ")
-      (str/replace "[" " ")
-      (str/replace "]" " ")
-      (str/replace "|" " ")
-      (str/replace "!" " ")
-      (str/replace "&" " ")
-      (str/replace "'" " ")
-      (str/replace ":" " ")
-      (str/replace "{" " ")
-      (str/replace "}" " ")
-      (str/replace "  " " ")
+      (str/replace #"[\[\]()|!&':{}]+" " ")
       (str/replace "  " " ")
       (str/trim)))
 
