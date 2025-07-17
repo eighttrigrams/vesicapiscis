@@ -209,9 +209,10 @@
                (update opts :q search.helpers/remove-some-chars)
                  ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
                (dissoc opts :q))]
-    (get-aggregated-contexts db 
-                             opts 
-                             highlighted-secondary-contexts)))
+    [(:id (:selected-context opts))
+     (get-aggregated-contexts db 
+                              opts 
+                              highlighted-secondary-contexts)]))
 
 (defn search-issues [db opts]
   (let [opts (
