@@ -22,6 +22,11 @@
     (t/date-time))
    "'"))
 
+(defn gen-iso-simple-date-str []
+  (t/format 
+   (t/formatter "YYYY-MM-dd") 
+   (t/date-time)))
+
 (defn simplify-date [m]
   (update m :date 
           #(when % 

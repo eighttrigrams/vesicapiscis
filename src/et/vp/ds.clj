@@ -280,8 +280,8 @@
   ([db title short_title]
    (create-new-issue! db title short_title nil))
   ([db title short_title sort_idx]
-   (let [now (helpers/gen-date)]
-     (:issues/id (jdbc/execute-one!
+   (let [now (helpers/gen-date)
+         id (:issues/id (jdbc/execute-one!
                   db
                   (sql/format {:insert-into [:issues]
                                :columns     (concat [:inserted_at
@@ -301,7 +301,10 @@
                                                        [sort_idx] 
                                                        []))]})
 
-                  {:return-keys true})))))
+                  {:return-keys true}))]
+     (when (empty? title)
+       (insert-date db id (helpers/gen-iso-simple-date-str)))
+     id)))
 
 (defn- insert-issue-relations! [db values]
   (jdbc/execute! db
