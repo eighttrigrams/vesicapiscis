@@ -43,15 +43,15 @@
           :integer-short-titles-desc 3
           0)
         opts (assoc opts :search-mode search-mode)]
-    (first (search/search-issues 
-            db 
+    (search/search-issues 
+     db 
             ;; this is bad!
-            (if selected-context
-              (merge {:q q
-                      :selected-context 
-                      (assoc-in selected-context [:data :views :current] opts)}
-                     (when link-issue {:link-issue link-issue}))
-              opts)))))
+     (if selected-context
+       (merge {:q q
+               :selected-context 
+               (assoc-in selected-context [:data :views :current] opts)}
+              (when link-issue {:link-issue link-issue}))
+       opts))))
 
 (defn- q-titles [selected-context opts]
   (mapv :title (q-all selected-context opts)))

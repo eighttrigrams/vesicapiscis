@@ -220,4 +220,4 @@
                (update opts :q search.helpers/remove-some-chars)
                  ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
                (dissoc opts :q))]
-    [(search-issues' db opts) {}]))
+    (search-issues' db opts)))
