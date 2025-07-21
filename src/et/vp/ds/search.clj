@@ -228,3 +228,20 @@
                  ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
                 (dissoc opts :q))]
      (search-issues' db opts))))
+
+;; This is my preferred interface for searches where 
+;; a context is actually selected
+(defn _search-related-items 
+  [_db 
+   _q 
+   selected-context-id 
+   {:keys [_secondary-contexts-inverted?
+           _secondary-contexts-unassigned-selected?
+           _secondary-contexts] ;; -> selected-secondary-contexts
+    :as _opts}
+   {:keys [_limit _force-limit?]:as _ctx}]
+  (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
+  (let [_ {:id nil
+           :data {:views {:current {}}}}]
+    ;;
+    ))
