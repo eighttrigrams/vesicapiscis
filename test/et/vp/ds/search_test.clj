@@ -45,6 +45,7 @@
         opts (assoc opts :search-mode search-mode)]
     (search/search-issues 
      db 
+     ;; TODO use q argument signature
             ;; this is bad!
      (if selected-context
        (merge {:q q
