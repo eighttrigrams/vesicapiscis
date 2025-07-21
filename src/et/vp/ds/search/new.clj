@@ -68,27 +68,31 @@
                                :asc
                                :desc)])))])
 
-(defn- limit [q {:keys [selected-context
-                        force-limit?
-                        limit]}]
+(defn- limit' [q 
+               {:keys [selected-context exclude-id?]}
+               {:keys [force-limit? limit]}]
   (when (or (and (= "" q)
                  (not selected-context))
-             force-limit?)
+            force-limit?
+            exclude-id?)
      {:limit limit}))
 
 (defn- wrap-given-issues-query-with-limit
   "if exclude-id? is set in opts
    - will ignore join ids
    - will limit the results"
-  [q {:keys [selected-context-id
-             join-ids
-             search-mode
-             unassigned-mode?
-             inverted-mode?
-             exclude-id?]
-    :as opts}]
+  [q 
+   {:keys [selected-context-id
+           join-ids
+           search-mode
+           unassigned-mode?
+           inverted-mode?
+           exclude-id?]
+    :as   opts}
+   {:keys [limit]
+    :as ctx}]
+  (when-not limit (throw (IllegalArgumentException. "no limit provided")))
   (let [join-ids (when-not exclude-id? join-ids)
-        opts (assoc opts :force-limit? exclude-id?)
         exclude-id (when exclude-id? selected-context-id)
         selected-context-id (when-not exclude-id? selected-context-id)
         join-ids (when selected-context-id join-ids)
@@ -114,14 +118,14 @@
                (when exclude-id
                   [:<> :issues.id [:inline exclude-id]])]}
      {:order-by (order-by search-mode)}
-     (limit q opts)
+     (limit' q opts ctx)
      (when selected-context-id
        {:join [:collections [:= :issues.id :collections.item_id]]}))))
 
 (defn fetch-issues
   [q 
-   {:as opts}
-   {:as ctx}]
+   opts
+   ctx]
   (->
-   (wrap-given-issues-query-with-limit q (merge opts ctx))
+   (wrap-given-issues-query-with-limit q opts ctx)
    (sql/format)))

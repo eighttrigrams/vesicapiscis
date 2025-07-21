@@ -112,7 +112,7 @@
       selected-secondary-contexts)))
 
 (defn- do-fetch-issues 
-  [db {:keys [selected-context link-issue limit]
+  [db {:keys [selected-context link-issue limit force-limit?]
        :as   state} search-mode]
   (let [selected-context-id (:id selected-context)
         current-view (-> selected-context :data :views :current)
@@ -125,7 +125,8 @@
                            :join-ids            (join-ids selected-context)
                            :inverted-mode?      (:secondary-contexts-inverted current-view)
                            :exclude-id? link-issue}
-                          {:limit (or limit 500)}))]
+                          {:limit (or limit 500)
+                           :force-limit? force-limit?}))]
     (seq issues)))
 
 (defn modify [_opts selected-context]
