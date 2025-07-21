@@ -42,7 +42,7 @@
       post-process'
       update-contexts))
 
-(defn- query-string-contexts-query [q _selected-context]
+(defn- query-string-contexts-query [q {:keys [limit]}]
   (sql/format (merge {:select [:issues.title
                                :issues.short_title
                                :issues.sort_idx
@@ -59,7 +59,7 @@
                       :order-by [[:updated_at_ctx :desc]]}
                      (when true #_(and (not selected-context)
                                 (= "" (or q "")))
-                       {:limit 100}))))
+                       {:limit (or limit 100)}))))
 
 
 (defn- parse-context-id [id]
@@ -84,7 +84,7 @@
         {:keys [q]} opts]
     (try
       (->>
-       (query-string-contexts-query q (:selected-context opts))
+       (query-string-contexts-query q opts)
        (jdbc/execute! db)
        (map post-process)
        (filter-contexts opts))
@@ -112,7 +112,7 @@
       selected-secondary-contexts)))
 
 (defn- do-fetch-issues 
-  [db {:keys [selected-context link-issue]
+  [db {:keys [selected-context link-issue limit]
        :as   state} search-mode]
   (let [selected-context-id (:id selected-context)
         current-view (-> selected-context :data :views :current)
@@ -125,7 +125,7 @@
                            :join-ids            (join-ids selected-context)
                            :inverted-mode?      (:secondary-contexts-inverted current-view)
                            :exclude-id? link-issue}
-                          {:limit 500}))]
+                          {:limit (or limit 500)}))]
     (seq issues)))
 
 (defn modify [_opts selected-context]
@@ -213,11 +213,17 @@
                              opts 
                              highlighted-secondary-contexts)))
 
-(defn search-issues [db opts]
-  (let [opts (
+
+(defn search-issues 
+  ;; prefer this signature
+  ;; TODO  maybe selected-context the third param
+  ([db q opts]
+   (search-issues db (assoc opts :q q)))
+  ([db opts]
+   (let [opts (
                 ;; TODO instead of doing this, make sure q is always at least ""
-              if (:q opts) 
-               (update opts :q search.helpers/remove-some-chars)
+               if (:q opts) 
+                (update opts :q search.helpers/remove-some-chars)
                  ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
-               (dissoc opts :q))]
-    (search-issues' db opts)))
+                (dissoc opts :q))]
+     (search-issues' db opts))))
