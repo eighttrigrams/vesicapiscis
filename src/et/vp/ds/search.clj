@@ -91,8 +91,6 @@
 (defn search-issues-deprecated [db opts]
   (search-issues' db opts))
 
-;; This is my preferred interface for searches where 
-;; a context is actually selected
 (defn search-related-items 
   [db 
    q 
