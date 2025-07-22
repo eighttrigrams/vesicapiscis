@@ -10,18 +10,7 @@
              :as helpers]
             [et.vp.ds.search.helpers :as search.helpers]))
 
-(defn get-title
-  [db {:keys [id]}] 
-  (-> {:select   [:issues.title]
-       :from     [:issues]
-       :where    [:= :issues.id [:inline id]]
-       :group-by [:issues.id]
-       :order-by [[:issues.updated_at :desc]]}
-      sql/format
-      (#(jdbc/execute-one! db % {:return-keys true}))
-      un-namespace-keys
-      :title))
-
+;; TODO this should happen outside the search namespace, in tracker
 (defn update-contexts [item]
   (update-in item [:data :contexts] 
              (fn [contexts]
@@ -53,8 +42,7 @@
       (->>
        (search.contexts/fetch-contexts q opts)
        (jdbc/execute! db)
-       (map post-process)
-       (search.contexts/filter-contexts opts))
+       (map post-process))
       (catch Exception e
         (log/error (str "error in search/search-contexts: " e " - param was: " q))
         (throw e)))))
@@ -122,6 +110,18 @@
   (->> highlighted-secondary-contexts
        (keep try-parse)))
 
+(defn get-title
+  [db {:keys [id]}] 
+  (-> {:select   [:issues.title]
+       :from     [:issues]
+       :where    [:= :issues.id [:inline id]]
+       :group-by [:issues.id]
+       :order-by [[:issues.updated_at :desc]]}
+      sql/format
+      (#(jdbc/execute-one! db % {:return-keys true}))
+      un-namespace-keys
+      :title))
+
 (defn- calc-highlighted [db 
                          secondary-contexts
                          highlighted-secondary-contexts]
@@ -180,7 +180,6 @@
     (get-aggregated-contexts db 
                              opts 
                              highlighted-secondary-contexts)))
-
 
 (defn search-issues 
   ;; prefer this signature
