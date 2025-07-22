@@ -92,7 +92,7 @@
   [db 
    q 
    selected-context-id 
-   opts
+   {:keys [link-issue] :as opts}
    {:keys [_limit _force-limit?] :as ctx}]
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [selected-context {:id   selected-context-id
@@ -100,9 +100,11 @@
                                                    opts
                                                    [:secondary-contexts-inverted
                                                     :secondary-contexts-unassigned-selected
-                                                    :selected-secondary-contexts])}}}]
+                                                    :selected-secondary-contexts
+                                                    :search-mode])}}}]
     (search-issues db (merge {:selected-context selected-context
                               :q q}
+                             (when link-issue {:link-issue link-issue})
                              ctx))))
 
 (defn- try-parse [item]

@@ -6,9 +6,7 @@
    [et.vp.ds.search-test-helpers :refer [db test-with-reset-db-and-time]]))
 
 (defn- q-all 
-  [selected-context {:keys [q search-mode link-issue]
-                      :or {q ""}
-                      :as opts}]
+  [selected-context {:keys [q search-mode link-issue] :as opts}]
   (let [search-mode 
         (case search-mode
           :last-touched-first 1
@@ -18,16 +16,14 @@
           :integer-short-titles-desc 3
           0)
         opts (assoc opts :search-mode search-mode)]
-    (search/search-issues
-     db 
-     ;; TODO use q argument signature
-            ;; this is bad!
-     (if selected-context
-       (merge {:q q
-               :selected-context 
-               (assoc-in selected-context [:data :views :current] opts)}
-              (when link-issue {:link-issue link-issue}))
-       opts))))
+    (if selected-context
+      (search/search-related-items
+       db
+       q
+       (:id selected-context)
+       (merge opts (when link-issue {:link-issue link-issue}))
+       {})
+      (search/search-issues db opts))))
 
 (defn- q-titles [selected-context opts]
   (mapv :title (q-all selected-context opts)))
@@ -174,7 +170,7 @@
              (q-titles item-1 {:selected-secondary-contexts (list (:id item-2) (:id item-1))
                                :secondary-contexts-inverted true})))))
   (test-with-reset-db-and-time "base case - inverted and unassigned at the same time"
-    (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
+    (let [[item-1 _item-2] (create-issues-for-intersection-tests {})]
       (is (= ["title-3"]
              (q-titles item-1 {:secondary-contexts-inverted            true
                                :secondary-contexts-unassigned-selected true})))))
