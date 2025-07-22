@@ -1,34 +1,9 @@
 (ns et.vp.ds.search-items-test
   (:require
-   [clojure.edn :as edn]
    [clojure.test :refer [deftest is testing]]
    [et.vp.ds :as ds]
-   [et.vp.ds.helpers :as helpers]
-   [et.vp.ds.relations :as datastore.relations]
    [et.vp.ds.search :as search]
-   [next.jdbc :as jdbc]))
-
-(defonce db (edn/read-string (slurp "./test_config.edn")))
-
-(defn reset-db []
-  (jdbc/execute-one! db ["delete from collections"])
-  (jdbc/execute-one! db ["delete from issues"]))
-
-(def time-fn 
-  (let [seconds (atom 0)]
-    (fn [] 
-      (let [current-seconds (mod @seconds 60)
-            minutes (+ (quot @seconds 60) 0)
-            time (str "'2025-01-01 10:" (format "%02d" minutes) ":" (format "%02d" current-seconds) "'")]
-        (swap! seconds inc)
-        time))))
-
-(defmacro with-time [& body]
-  `(with-redefs [helpers/gen-date time-fn
-                 helpers/instant-now
-                 (fn []
-                   (java.time.Instant/parse "2025-01-02T05:45:00Z"))]
-     ~@body))
+   [et.vp.ds.search-test-helpers :refer [db test-with-reset-db-and-time]]))
 
 (defn- q-all 
   [selected-context {:keys [q search-mode link-issue]
@@ -107,12 +82,6 @@
                                 :context-ids-set #{(:id item-2)}
                                 :date            "2025-01-04"})]
     [item-1 item-2]))
-
-(defmacro test-with-reset-db-and-time [string & body]
-  `(testing ~string
-     (reset-db)
-     (with-time
-       ~@body)))
 
 (deftest search
   (test-with-reset-db-and-time "base case - overview"
