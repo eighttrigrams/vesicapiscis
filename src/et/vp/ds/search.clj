@@ -158,10 +158,9 @@
                                             (map (fn [[k [val title]]] [k [val title false]])))]
     (concat front (reverse (sort-by #(get-in % [1 1]) back)))))
 
-(defn- get-aggregated-contexts 
-  [db 
-   opts 
-   highlighted-secondary-contexts]
+(defn fetch-aggregated-contexts 
+  [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
+       :as opts}]
   (let [issues (search-issues' db (-> opts
                                       (assoc :q "")
                                       (assoc-in [:selected-context :data :views :current :search-mode] 0)
@@ -179,9 +178,3 @@
          reverse
          (map (fn [[count [id title]]] [id [title count]]))
          (sort-secondary-contexts db highlighted-secondary-contexts))))
-
-(defn fetch-aggregated-contexts [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
-                                     :as opts}]
-  (get-aggregated-contexts db 
-                           opts 
-                           highlighted-secondary-contexts))
