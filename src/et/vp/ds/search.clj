@@ -79,12 +79,31 @@
         (assoc-in  
          [:data :views :current :secondary-contexts-unassigned-selected] nil)))))
 
-(defn- search-issues'
+(defn search-issues
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
        :as opts}]
   (let [opts (update opts :selected-context (partial modify opts))]
     (->> (do-fetch-issues db opts search-mode)
          (map post-process))))
+
+;; This is my preferred interface for searches where 
+;; a context is actually selected
+(defn search-related-items 
+  [db 
+   q 
+   selected-context-id 
+   opts
+   {:keys [_limit _force-limit?] :as ctx}]
+  (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
+  (let [selected-context {:id   selected-context-id
+                          :data {:views {:current (select-keys
+                                                   opts
+                                                   [:secondary-contexts-inverted
+                                                    :secondary-contexts-unassigned-selected
+                                                    :selected-secondary-contexts])}}}]
+    (search-issues db (merge {:selected-context selected-context
+                              :q q}
+                             ctx))))
 
 (defn- try-parse [item]
   (try (Integer/parseInt item)
@@ -136,12 +155,12 @@
   [db 
    opts 
    highlighted-secondary-contexts]
-  (let [issues (search-issues' db (-> opts
-                                      (assoc :q "")
-                                      (assoc-in [:selected-context :data :views :current :search-mode] 0)
-                                      (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
-                                      (assoc-in [:selected-context :data :views :current :secondary-contexts-inverted] false)
-                                      (assoc-in [:selected-context :data :views :current :secondary-contexts-unassigned-selected] false)))]
+  (let [issues (search-issues db (-> opts
+                                     (assoc :q "")
+                                     (assoc-in [:selected-context :data :views :current :search-mode] 0)
+                                     (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
+                                     (assoc-in [:selected-context :data :views :current :secondary-contexts-inverted] false)
+                                     (assoc-in [:selected-context :data :views :current :secondary-contexts-unassigned-selected] false)))]
     (->> issues
          (map #(get-in % [:data :contexts]))
          (map #(filter (fn [[_id {:keys [show-badge?]}]] show-badge?) %))
@@ -159,28 +178,3 @@
   (get-aggregated-contexts db 
                            opts 
                            highlighted-secondary-contexts))
-
-(defn search-issues 
-  ;; prefer this signature
-  ;; TODO  maybe selected-context the third param
-  ([db q opts]
-   (search-issues db (assoc opts :q q)))
-  ([db opts]
-   (search-issues' db opts)))
-
-;; This is my preferred interface for searches where 
-;; a context is actually selected
-(defn _search-related-items 
-  [_db 
-   _q 
-   selected-context-id 
-   {:keys [_secondary-contexts-inverted
-           _secondary-contexts-unassigned-selected
-           _selected-secondary-contexts]
-    :as _opts}
-   {:keys [_limit _force-limit?]:as _ctx}]
-  (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
-  (let [_ {:id nil
-           :data {:views {:current {}}}}]
-    ;;
-    ))

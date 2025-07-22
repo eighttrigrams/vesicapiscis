@@ -18,7 +18,7 @@
           :integer-short-titles-desc 3
           0)
         opts (assoc opts :search-mode search-mode)]
-    (search/search-issues 
+    (search/search-issues
      db 
      ;; TODO use q argument signature
             ;; this is bad!
