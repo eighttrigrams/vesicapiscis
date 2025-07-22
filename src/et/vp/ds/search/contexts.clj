@@ -11,9 +11,8 @@
             :from   :collections
             :where  [:= :collections.item_id (:id selected-context)]}]]))
 
-;; TODO make it work for items or for contexts
 (defn fetch-items
-  [q {:keys [selected-context] :as opts}]
+  [q {:keys [selected-context all-items?] :as opts}]
   (let [{:keys [limit]} opts
         exclusion-clause (get-exclusion-clause opts)]
     (sql/format 
@@ -21,8 +20,10 @@
              :from     [:issues]
              :where    [:and
                         (search.helpers/get-search-clause q)
-                        [:= :issues.is_context true]
-                        [:not [:= :issues.id (:id selected-context)]]
-                        exclusion-clause]
-             :order-by [[:updated_at_ctx :desc]]}
-            (when true {:limit (or limit 100)})))))
+                        (when-not all-items? [:= :issues.is_context true])
+                        (when selected-context [:not [:= :issues.id (:id selected-context)]])
+                        (when selected-context exclusion-clause)]
+             :order-by [[(if all-items? 
+                           :updated_at
+                           :updated_at_ctx) :desc]]
+             :limit (or limit 100)}))))

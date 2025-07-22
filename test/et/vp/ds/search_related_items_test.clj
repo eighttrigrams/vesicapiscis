@@ -23,7 +23,8 @@
        (:id selected-context)
        (merge opts (when link-issue {:link-issue link-issue}))
        {})
-      (search/search-issues db opts))))
+      ;; TODO consider moving all these tests using this to search_items_test
+      (search/search-items db (assoc opts :all-items? true)))))
 
 (defn- q-titles [selected-context opts]
   (mapv :title (q-all selected-context opts)))

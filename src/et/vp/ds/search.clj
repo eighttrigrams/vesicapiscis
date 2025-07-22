@@ -17,6 +17,7 @@
       (empty? annotation)
       (assoc :annotation issue_annotation))))
 
+;; TODO make it take a q param, and an (optional, in the beginning) opts argument
 (defn search-items
   [db opts]
   (let [opts (if (string? opts) 
@@ -29,7 +30,7 @@
        (jdbc/execute! db)
        (map post-process))
       (catch Exception e
-        (log/error (str "error in search/search-contexts: " e " - param was: " q))
+        (log/error (str "error in search/search-items: " e " - param was: " q))
         (throw e)))))
 
 (defn- do-query [db formatted-query]
@@ -79,12 +80,16 @@
         (assoc-in  
          [:data :views :current :secondary-contexts-unassigned-selected] nil)))))
 
-(defn search-issues
+(defn- search-issues'
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
        :as opts}]
   (let [opts (update opts :selected-context (partial modify opts))]
     (->> (do-fetch-issues db opts search-mode)
          (map post-process))))
+
+;; TODO make many callers choose to call either search-related-items or search-items instead
+(defn search-issues-deprecated [db opts]
+  (search-issues' db opts))
 
 ;; This is my preferred interface for searches where 
 ;; a context is actually selected
@@ -102,7 +107,7 @@
                                                     :secondary-contexts-unassigned-selected
                                                     :selected-secondary-contexts
                                                     :search-mode])}}}]
-    (search-issues db (merge {:selected-context selected-context
+    (search-issues' db (merge {:selected-context selected-context
                               :q q}
                              (when link-issue {:link-issue link-issue})
                              ctx))))
@@ -157,12 +162,12 @@
   [db 
    opts 
    highlighted-secondary-contexts]
-  (let [issues (search-issues db (-> opts
-                                     (assoc :q "")
-                                     (assoc-in [:selected-context :data :views :current :search-mode] 0)
-                                     (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
-                                     (assoc-in [:selected-context :data :views :current :secondary-contexts-inverted] false)
-                                     (assoc-in [:selected-context :data :views :current :secondary-contexts-unassigned-selected] false)))]
+  (let [issues (search-issues' db (-> opts
+                                      (assoc :q "")
+                                      (assoc-in [:selected-context :data :views :current :search-mode] 0)
+                                      (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
+                                      (assoc-in [:selected-context :data :views :current :secondary-contexts-inverted] false)
+                                      (assoc-in [:selected-context :data :views :current :secondary-contexts-unassigned-selected] false)))]
     (->> issues
          (map #(get-in % [:data :contexts]))
          (map #(filter (fn [[_id {:keys [show-badge?]}]] show-badge?) %))

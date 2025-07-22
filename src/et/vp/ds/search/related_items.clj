@@ -68,6 +68,7 @@
                {:keys [force-limit? limit]}]
   (when (or (and (= "" q)
                  (not selected-context))
+            ;; TODO not sure if that param is still needed
             force-limit?
             exclude-id?)
      {:limit limit}))
