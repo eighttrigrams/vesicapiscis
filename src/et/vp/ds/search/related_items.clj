@@ -117,7 +117,7 @@
      (when selected-context-id
        {:join [:collections [:= :issues.id :collections.item_id]]}))))
 
-(defn fetch-issues
+(defn fetch-items
   [q 
    opts
    ctx]

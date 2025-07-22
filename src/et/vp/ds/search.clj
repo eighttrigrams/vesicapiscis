@@ -62,7 +62,7 @@
   (let [selected-context-id (:id selected-context)
         current-view (-> selected-context :data :views :current)
         issues (do-query db 
-                         (search.related-items/fetch-issues 
+                         (search.related-items/fetch-items 
                           (or (:q state) "") 
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode
