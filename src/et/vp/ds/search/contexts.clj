@@ -21,12 +21,13 @@
     id
     (Integer/parseInt (if (keyword? id) (name id) id))))
 
-(defn filter-contexts [{:keys [link-context selected-context]} contexts]
+(defn filter-contexts [{:keys [link-context selected-context selected-issue]} contexts]
   (if-not link-context
     (remove #(= (:id selected-context) (:id %)) contexts)
-    (let [context-keys (keys (:contexts (:data selected-context)))
+    (let [context-keys (keys (or (:contexts (:data selected-issue))
+                                 (:contexts (:data selected-context))))
           ids-of-contexts-to-remove (conj (set (map parse-context-id context-keys))
-                                          (:id selected-context))]
+                                          (:id (or selected-issue selected-context)))]
       (remove #(ids-of-contexts-to-remove (:id %)) contexts))))
 
 (defn fetch-contexts

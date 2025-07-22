@@ -43,7 +43,6 @@
       post-process'
       update-contexts))
 
-
 (defn search-contexts
   [db opts]
   (let [opts (if (string? opts) 

@@ -103,3 +103,39 @@
           results (search/search-contexts db {:q ""})]
       ;; Empty query should return all contexts
       (is (= 3 (count results))))))
+
+(defn- create-contexts-for-link-test
+  "Creates contexts with relationships for testing link-context functionality"
+  []
+  (let [context-1 (new-context db {:title "Main Context" :short-title "main"})
+        context-2 (new-context db {:title "Related Context" :short-title "related"})
+        context-3 (new-context db {:title "Other Context" :short-title "other"})
+        ;; Create an issue with relationships to contexts and populate the contexts data
+        issue-1-raw (new-issue db {:title "Test Issue" 
+                                  :short-title "test"
+                                  :context-ids-set #{(:id context-1) (:id context-2)}})
+        ;; Update the issue to have contexts in its data field
+        issue-1 (ds/update-item db (assoc-in issue-1-raw [:data :contexts] 
+                                           {(:id context-1) {:title "Main Context" :show-badge? true}
+                                            (:id context-2) {:title "Related Context" :show-badge? true}}))]
+    [context-1 context-2 context-3 issue-1]))
+
+(deftest search-contexts-link-context
+  (test-with-reset-db-and-time "search-contexts with link-context"
+    (let [[context-1 context-2 _context-3 issue-1] (create-contexts-for-link-test)
+          results-with-issue (search/search-contexts db {:link-context true
+                                                         :selected-issue issue-1})]
+      ;; Should exclude context-1 and context-2 (already linked to issue-1)
+      ;; Should include context-3 (not linked to issue-1)
+      (is (= 1 (count results-with-issue)))
+      (is (= "Other Context" (:title (first results-with-issue))))
+      
+      ;; Test with selected-context that has context relationships
+      (let [context-1-with-contexts (ds/update-item db (assoc-in context-1 [:data :contexts] 
+                                                               {(:id context-2) {:title "Related Context" :show-badge? true}}))
+            results-with-context (search/search-contexts db {:link-context true
+                                                             :selected-context context-1-with-contexts})]
+        ;; Should exclude context-1 (selected) and context-2 (in contexts data)
+        ;; Should include context-3  
+        (is (= 1 (count results-with-context)))
+        (is (= "Other Context" (:title (first results-with-context))))))))
