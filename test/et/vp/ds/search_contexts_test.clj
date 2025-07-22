@@ -5,6 +5,11 @@
    [et.vp.ds.search :as search]
    [et.vp.ds.search-test-helpers :refer [db test-with-reset-db-and-time]]))
 
+(defn- search-contexts
+  "Wrapper around search/search-contexts for potential future implementation changes"
+  [db opts]
+  (search/search-contexts db opts))
+
 (defn- new-context 
   [db {:keys [short-title date]
        :or {short-title ""}
@@ -37,7 +42,7 @@
 (deftest search-contexts-basic
   (test-with-reset-db-and-time "basic search-contexts functionality"
     (let [_contexts (create-contexts)
-          all-contexts (search/search-contexts db {})]
+          all-contexts (search-contexts db {})]
       ;; Should return all contexts
       (is (= 3 (count all-contexts)))
       (is (some #(= "Context One" (:title %)) all-contexts))
@@ -48,7 +53,7 @@
   (test-with-reset-db-and-time "search-contexts with search query"
     (let [_contexts (create-contexts)]
       ;; Search for "Context" should return contexts containing that word
-      (let [results (search/search-contexts db {:q "Context"})]
+      (let [results (search-contexts db {:q "Context"})]
         ;; "Another Context" also contains "Context", so it should be included
         (is (= 3 (count results)))
         (is (some #(= "Context One" (:title %)) results))
@@ -56,24 +61,24 @@
         (is (some #(= "Another Context" (:title %)) results)))
       
       ;; Search for "Another" should return only one context
-      (let [results (search/search-contexts db {:q "Another"})]
+      (let [results (search-contexts db {:q "Another"})]
         (is (= 1 (count results)))
         (is (= "Another Context" (:title (first results)))))
       
       ;; Search for "One" should return only the context containing that word
-      (let [results (search/search-contexts db {:q "One"})]
+      (let [results (search-contexts db {:q "One"})]
         (is (= 1 (count results)))
         (is (= "Context One" (:title (first results)))))
       
       ;; Search for "Two" should return only the context containing that word  
-      (let [results (search/search-contexts db {:q "Two"})]
+      (let [results (search-contexts db {:q "Two"})]
         (is (= 1 (count results)))
         (is (= "Context Two" (:title (first results))))))))
 
 (deftest search-contexts-string-param
   (test-with-reset-db-and-time "search-contexts with string parameter"
     (let [_contexts (create-contexts)
-          results (search/search-contexts db "Context")]
+          results (search-contexts db "Context")]
       ;; Should handle string parameter by converting to opts map
       ;; "Context" should return all 3 contexts since they all contain "Context"
       (is (= 3 (count results)))
@@ -84,7 +89,7 @@
 (deftest search-contexts-filtering
   (test-with-reset-db-and-time "search-contexts with filtering options"
     (let [[context-1 _context-2 _context-3] (create-contexts)
-          results (search/search-contexts db {:selected-context context-1})]
+          results (search-contexts db {:selected-context context-1})]
       ;; Should exclude the selected context from results
       (is (not (some #(= (:id context-1) (:id %)) results)))
       (is (some #(= "Context Two" (:title %)) results))
@@ -93,14 +98,14 @@
 (deftest search-contexts-limit
   (test-with-reset-db-and-time "search-contexts with limit"
     (let [_contexts (create-contexts)
-          results (search/search-contexts db {:limit 2})]
+          results (search-contexts db {:limit 2})]
       ;; Should respect limit parameter
       (is (<= (count results) 2)))))
 
 (deftest search-contexts-empty-query
   (test-with-reset-db-and-time "search-contexts with empty query"
     (let [_contexts (create-contexts)
-          results (search/search-contexts db {:q ""})]
+          results (search-contexts db {:q ""})]
       ;; Empty query should return all contexts
       (is (= 3 (count results))))))
 
@@ -123,7 +128,7 @@
 (deftest search-contexts-link-context
   (test-with-reset-db-and-time "search-contexts with link-context"
     (let [[context-1 context-2 _context-3 issue-1] (create-contexts-for-link-test)
-          results-with-issue (search/search-contexts db {:link-context true
+          results-with-issue (search-contexts db {:link-context true
                                                          :selected-issue issue-1})]
       ;; Should exclude context-1 and context-2 (already linked to issue-1)
       ;; Should include context-3 (not linked to issue-1)
@@ -133,7 +138,7 @@
       ;; Test with selected-context that has context relationships
       (let [context-1-with-contexts (ds/update-item db (assoc-in context-1 [:data :contexts] 
                                                                {(:id context-2) {:title "Related Context" :show-badge? true}}))
-            results-with-context (search/search-contexts db {:link-context true
+            results-with-context (search-contexts db {:link-context true
                                                              :selected-context context-1-with-contexts})]
         ;; Should exclude context-1 (selected) and context-2 (in contexts data)
         ;; Should include context-3  
