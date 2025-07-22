@@ -8,7 +8,7 @@
 (defn- search-contexts
   "Wrapper around search/search-contexts for potential future implementation changes"
   [db opts]
-  (search/search-contexts db opts))
+  (search/search-items db opts))
 
 (defn- new-context 
   [db {:keys [short-title date]

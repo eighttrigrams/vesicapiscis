@@ -7,8 +7,7 @@
             [et.vp.ds.search.contexts :as search.contexts]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
-             :as helpers]
-            [et.vp.ds.search.helpers :as search.helpers]))
+             :as helpers]))
 
 ;; TODO this ns should be completely oblivious of the :data data-structure inside the items
 
@@ -22,7 +21,7 @@
   (-> query-result
       post-process'))
 
-(defn search-contexts
+(defn search-items
   [db opts]
   (let [opts (if (string? opts) 
                {:q opts}
@@ -161,15 +160,9 @@
 
 (defn fetch-aggregated-contexts [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
                                      :as opts}]
-  (let [opts (
-                ;; TODO instead of doing this, make sure q is always at least ""
-              if (:q opts) 
-               (update opts :q search.helpers/remove-some-chars)
-                 ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
-               (dissoc opts :q))]
-    (get-aggregated-contexts db 
-                             opts 
-                             highlighted-secondary-contexts)))
+  (get-aggregated-contexts db 
+                           opts 
+                           highlighted-secondary-contexts))
 
 (defn search-issues 
   ;; prefer this signature
@@ -177,13 +170,7 @@
   ([db q opts]
    (search-issues db (assoc opts :q q)))
   ([db opts]
-   (let [opts (
-                ;; TODO instead of doing this, make sure q is always at least ""
-               if (:q opts) 
-                (update opts :q search.helpers/remove-some-chars)
-                 ;; for destructuring in searcj-issues' to work properly when :q is present but has nil value
-                (dissoc opts :q))]
-     (search-issues' db opts))))
+   (search-issues' db opts)))
 
 ;; This is my preferred interface for searches where 
 ;; a context is actually selected

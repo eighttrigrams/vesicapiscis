@@ -11,7 +11,7 @@
             :from   :collections
             :where  [:= :collections.item_id (:id selected-context)]}]]))
 
-;; TODO make it work for issues or for contexts
+;; TODO make it work for items or for contexts
 (defn fetch-items
   [q {:keys [selected-context] :as opts}]
   (let [{:keys [limit]} opts
