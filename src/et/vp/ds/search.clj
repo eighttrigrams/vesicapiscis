@@ -4,6 +4,7 @@
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [et.vp.ds.search.items :as search.items]
+            [et.vp.ds.search.contexts :as search.contexts]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
              :as helpers]
@@ -42,39 +43,6 @@
       post-process'
       update-contexts))
 
-(defn- query-string-contexts-query [q {:keys [limit]}]
-  (sql/format (merge {:select [:issues.title
-                               :issues.short_title
-                               :issues.sort_idx
-                               :issues.id
-                               :issues.data
-                               :issues.is_context
-                               :issues.updated_at_ctx]
-                      :from  [:issues]
-                      :where [:and
-                              (when-not (= "" (or q ""))
-                                [:raw (format "searchable @@ to_tsquery('simple', '%s')"
-                                              (search.helpers/convert-q-to-query-string q))])
-                              [:= :issues.is_context true]]
-                      :order-by [[:updated_at_ctx :desc]]}
-                     (when true #_(and (not selected-context)
-                                (= "" (or q "")))
-                       {:limit (or limit 100)}))))
-
-
-(defn- parse-context-id [id]
-  (if (number? id)
-    id
-    (Integer/parseInt (if (keyword? id) (name id) id))))
-
-(defn- filter-contexts [{:keys [link-context selected-context selected-issue]} contexts]
-  (if-not link-context
-    (remove #(= (:id selected-context) (:id %)) contexts)
-    (let [context-keys (keys (or (:contexts (:data selected-issue))
-                                 (:contexts (:data selected-context))))
-          ids-of-contexts-to-remove (conj (set (map parse-context-id context-keys))
-                                          (:id (or selected-issue selected-context)))]
-      (remove #(ids-of-contexts-to-remove (:id %)) contexts))))
 
 (defn search-contexts
   [db opts]
@@ -84,10 +52,10 @@
         {:keys [q]} opts]
     (try
       (->>
-       (query-string-contexts-query q opts)
+       (search.contexts/fetch-contexts q opts)
        (jdbc/execute! db)
        (map post-process)
-       (filter-contexts opts))
+       (search.contexts/filter-contexts opts))
       (catch Exception e
         (log/error (str "error in search/search-contexts: " e " - param was: " q))
         (throw e)))))
