@@ -1,4 +1,4 @@
-(ns et.vp.ds.search.new
+(ns et.vp.ds.search.items
   (:require [et.vp.ds.search.core :as search.core]
             [et.vp.ds.search.helpers :as search.helpers]
             [honey.sql :as sql]))

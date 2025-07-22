@@ -1,4 +1,4 @@
-(ns et.vp.ds.search-test
+(ns et.vp.ds.search-items-test
   (:require
    [clojure.edn :as edn]
    [clojure.test :refer [deftest is testing]]

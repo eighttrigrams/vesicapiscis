@@ -3,7 +3,7 @@
             [cambium.core :as log]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
-            [et.vp.ds.search.new :as search.new]
+            [et.vp.ds.search.items :as search.items]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
              :as helpers]
@@ -117,7 +117,7 @@
   (let [selected-context-id (:id selected-context)
         current-view (-> selected-context :data :views :current)
         issues (do-query db 
-                         (search.new/fetch-issues 
+                         (search.items/fetch-issues 
                           (or (:q state) "") 
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode
