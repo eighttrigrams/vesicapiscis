@@ -11,15 +11,11 @@
 
 ;; TODO this ns should be completely oblivious of the :data data-structure inside the items
 
-(defn- post-process' [result]
+(defn- post-process [result]
   (let [{:keys [annotation issue_annotation] :as r} (post-process-base result)]
     (cond-> r 
       (empty? annotation)
       (assoc :annotation issue_annotation))))
-
-(defn post-process [query-result]
-  (-> query-result
-      post-process'))
 
 (defn search-items
   [db opts]
