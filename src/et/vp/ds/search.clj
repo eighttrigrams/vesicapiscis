@@ -10,16 +10,7 @@
              :as helpers]
             [et.vp.ds.search.helpers :as search.helpers]))
 
-;; TODO this should happen outside the search namespace, in tracker
-(defn update-contexts [item]
-  (update-in item [:data :contexts] 
-             (fn [contexts]
-               (into {} 
-                     (map (fn [[k v]]
-                            [(Integer/parseInt (name k)) (if (map? v) v
-                                                             {:title       v
-                                                              :show-badge? true})])
-                          contexts)))))
+;; TODO this ns should be completely oblivious of the :data data-structure inside the items
 
 (defn- post-process' [result]
   (let [{:keys [annotation issue_annotation] :as r} (post-process-base result)]
@@ -29,8 +20,7 @@
 
 (defn post-process [query-result]
   (-> query-result
-      post-process'
-      update-contexts))
+      post-process'))
 
 (defn search-contexts
   [db opts]
@@ -201,9 +191,9 @@
   [_db 
    _q 
    selected-context-id 
-   {:keys [_secondary-contexts-inverted?
-           _secondary-contexts-unassigned-selected?
-           _secondary-contexts] ;; -> selected-secondary-contexts
+   {:keys [_secondary-contexts-inverted
+           _secondary-contexts-unassigned-selected
+           _selected-secondary-contexts]
     :as _opts}
    {:keys [_limit _force-limit?]:as _ctx}]
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
