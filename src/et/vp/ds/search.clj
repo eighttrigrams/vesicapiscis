@@ -3,7 +3,7 @@
             [cambium.core :as log]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
-            [et.vp.ds.search.items :as search.items]
+            [et.vp.ds.search.related-items :as search.related-items]
             [et.vp.ds.search.contexts :as search.contexts]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
@@ -30,7 +30,7 @@
         {:keys [q]} opts]
     (try
       (->>
-       (search.contexts/fetch-contexts q opts)
+       (search.contexts/fetch-items q opts)
        (jdbc/execute! db)
        (map post-process))
       (catch Exception e
@@ -62,7 +62,7 @@
   (let [selected-context-id (:id selected-context)
         current-view (-> selected-context :data :views :current)
         issues (do-query db 
-                         (search.items/fetch-issues 
+                         (search.related-items/fetch-issues 
                           (or (:q state) "") 
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode

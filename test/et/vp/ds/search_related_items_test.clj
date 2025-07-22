@@ -1,6 +1,6 @@
-(ns et.vp.ds.search-items-test
+(ns et.vp.ds.search-related-items-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is]]
    [et.vp.ds :as ds]
    [et.vp.ds.search :as search]
    [et.vp.ds.search-test-helpers :refer [db test-with-reset-db-and-time]]))

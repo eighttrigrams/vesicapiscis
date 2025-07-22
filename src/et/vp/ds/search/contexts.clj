@@ -1,20 +1,7 @@
 (ns et.vp.ds.search.contexts
-  (:require [et.vp.ds.search.helpers :as search.helpers]
+  (:require [et.vp.ds.search.core :as core]
+            [et.vp.ds.search.helpers :as search.helpers]
             [honey.sql :as sql]))
-
-(def contexts-select 
-  [:issues.title
-   :issues.short_title
-   :issues.sort_idx
-   :issues.id
-   :issues.data
-   :issues.is_context
-   :issues.updated_at_ctx])
-
-(defn- get-search-clause [q]
-  (when-not (= "" (or q ""))
-    [:raw (format "searchable @@ to_tsquery('simple', '%s')"
-                  (search.helpers/convert-q-to-query-string q))]))
 
 (defn- get-exclusion-clause [{:keys [link-context selected-context]}]
   (when 
@@ -24,15 +11,16 @@
             :from   :collections
             :where  [:= :collections.item_id (:id selected-context)]}]]))
 
-(defn fetch-contexts
+;; TODO make it work for issues or for contexts
+(defn fetch-items
   [q {:keys [selected-context] :as opts}]
   (let [{:keys [limit]} opts
         exclusion-clause (get-exclusion-clause opts)]
     (sql/format 
-     (merge {:select   contexts-select
+     (merge {:select   core/select
              :from     [:issues]
              :where    [:and
-                        (get-search-clause q)
+                        (search.helpers/get-search-clause q)
                         [:= :issues.is_context true]
                         [:not [:= :issues.id (:id selected-context)]]
                         exclusion-clause]

@@ -1,12 +1,7 @@
-(ns et.vp.ds.search.items
+(ns et.vp.ds.search.related-items
   (:require [et.vp.ds.search.core :as search.core]
             [et.vp.ds.search.helpers :as search.helpers]
             [honey.sql :as sql]))
-
-(defn- get-search-clause [q]
-  (when (not= "" q)
-    [:raw (format "searchable @@ to_tsquery('simple', '%s')" 
-                  (search.helpers/convert-q-to-query-string q))]))
 
 (defn- get-events-exist-clause [search-mode]
   (when (= 4 search-mode)
@@ -107,7 +102,7 @@
                  (if or-mode? 
                    (or-query join-ids unassigned-mode?) 
                    (and-query join-ids unassigned-mode? inverted-mode?)))
-               (get-search-clause q)
+               (search.helpers/get-search-clause q)
                (get-events-exist-clause search-mode)
                (when selected-context-id
                  [:= :collections.container_id [:raw selected-context-id]])

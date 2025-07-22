@@ -13,3 +13,8 @@
     (if (= ":*" qs)
       "*"
       qs)))
+
+(defn get-search-clause [q]
+  (when-not (= "" (or q ""))
+    [:raw (format "searchable @@ to_tsquery('simple', '%s')"
+                  (convert-q-to-query-string q))]))
