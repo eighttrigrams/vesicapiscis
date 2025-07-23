@@ -57,7 +57,7 @@
    q 
    selected-context-id 
    {:keys [link-issue search-mode] :as opts}
-   {:keys [limit force-limit?] :as _ctx}]
+   {:keys [limit] :as ctx}]
   (when link-issue (throw (IllegalArgumentException. "'link-issue' shouldn't be supplied here any longer")))
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)
@@ -69,9 +69,11 @@
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected opts)
                            :join-ids            (join-ids opts)
                            :inverted-mode?      (:secondary-contexts-inverted opts)}
-                          {:limit        (or limit 500)
-                           :force-limit? force-limit?}))]
-    (map post-process (seq issues))))
+                          ctx))
+        results (map post-process (seq issues))]
+    (when (and limit (> (count results) limit)) 
+      (throw (Exception. "got more results than 'limit' allows. impl broken!")))
+    results))
 
 (defn search 
   "Prefer calling search-items or search-related-items"
@@ -151,8 +153,7 @@
                 "" 
                 (:id (:selected-context opts))
                 {}
-                ;; TODO review
-                {:limit 500})]
+                {})]
     (->> issues
          (map #(get-in % [:data :contexts]))
          (map #(filter (fn [[_id {:keys [show-badge?]}]] show-badge?) %))

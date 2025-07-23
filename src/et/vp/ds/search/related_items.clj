@@ -57,46 +57,31 @@
                                :asc
                                :desc)])))])
 
-(defn- limit' [{:keys [selected-context-id]}
-               {:keys [force-limit? limit]}]
-  (when (or (not selected-context-id)
-            ;; TODO not sure if that param is still needed
-            force-limit?)
-     {:limit limit}))
-
-(defn- wrap-given-issues-query-with-limit
+(defn search
   [q 
    {:keys [selected-context-id
            join-ids
            search-mode
            unassigned-mode?
            inverted-mode?]
-    :as   opts}
+    :as   _opts}
    {:keys [limit]
-    :as ctx}]
-  (when-not limit (throw (IllegalArgumentException. "no 'limit' provided")))
+    :as _ctx}]
   (let [or-mode? (when join-ids inverted-mode?)]
-    (merge
-     {:select (vec (concat core/select [:collections.annotation]))
-      :from   :issues
-      :where  [:and
-               (when (or join-ids unassigned-mode?)
-                 (if or-mode? 
-                   (or-query join-ids unassigned-mode?) 
-                   (and-query join-ids unassigned-mode? inverted-mode?)))
-               (search.helpers/get-search-clause q)
-               (get-events-exist-clause search-mode)
-               [:= :collections.container_id [:raw selected-context-id]]
-               (when (or (= 2 search-mode) (= 3 search-mode))
-                 [:> :sort_idx 0])]}
-     {:order-by (order-by search-mode)}
-     (limit' opts ctx)
-     {:join [:collections [:= :issues.id :collections.item_id]]})))
-
-(defn search
-  [q 
-   opts
-   ctx]
-  (->
-   (wrap-given-issues-query-with-limit q opts ctx)
-   (sql/format)))
+    (-> (merge
+         {:select (vec (concat core/select [:collections.annotation]))
+          :from   :issues
+          :where  [:and
+                   (when (or join-ids unassigned-mode?)
+                     (if or-mode? 
+                       (or-query join-ids unassigned-mode?) 
+                       (and-query join-ids unassigned-mode? inverted-mode?)))
+                   (search.helpers/get-search-clause q)
+                   (get-events-exist-clause search-mode)
+                   [:= :collections.container_id [:raw selected-context-id]]
+                   (when (or (= 2 search-mode) (= 3 search-mode))
+                     [:> :sort_idx 0])]}
+         {:order-by (order-by search-mode)}
+         (when limit {:limit limit})
+         {:join [:collections [:= :issues.id :collections.item_id]]})
+        sql/format)))
