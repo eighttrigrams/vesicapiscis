@@ -64,10 +64,10 @@
                                :desc)])))])
 
 (defn- limit' [q 
-               {:keys [selected-context exclude-id?]}
+               {:keys [selected-context-id exclude-id?]}
                {:keys [force-limit? limit]}]
   (when (or (and (empty? q)
-                 (not selected-context))
+                 (not selected-context-id))
             ;; TODO not sure if that param is still needed
             force-limit?
             exclude-id?)
