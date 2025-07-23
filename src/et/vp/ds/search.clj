@@ -75,8 +75,9 @@
 
 (defn search 
   "Prefer calling search-items or search-related-items"
-  [db q selected-context-id {:keys [link-issue] :as opts} ctx]
+  [db q selected-context-id {:keys [link-issue selected-context] :as opts} ctx]
   (log/info (str "search:" selected-context-id " link-issue:" link-issue))
+  (when selected-context (throw (IllegalArgumentException. "'selected-context' not expected as an argument here")))
   (if selected-context-id
    (if link-issue
      (search-items db 
