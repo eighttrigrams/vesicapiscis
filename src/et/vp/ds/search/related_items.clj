@@ -66,9 +66,6 @@
      {:limit limit}))
 
 (defn- wrap-given-issues-query-with-limit
-  "if exclude-id? is set in opts
-   - will ignore join ids
-   - will limit the results"
   [q 
    {:keys [selected-context-id
            join-ids
