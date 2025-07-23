@@ -14,6 +14,21 @@
       (empty? annotation)
       (assoc :annotation issue_annotation))))
 
+(defn- post-process-contexts [item]
+  (if (-> item :data :contexts)
+    (update-in item [:data :contexts] 
+               (fn [contexts]
+                 (into {} (map (fn [[k v]]
+                              [(Integer/parseInt (name k)) v])
+                            contexts)))) 
+    item))
+
+(comment
+  (post-process-contexts {:data {:contexts {"123"  {:title       "Name1"
+                                                    :show-badge? true}
+                                            :456 {:title       "Name2"
+                                                  :show-badge? true}}}}))
+
 (defn search-items
   [db 
    q 
@@ -29,7 +44,8 @@
     (->>
      (core/search-items q opts ctx)
      (jdbc/execute! db)
-     (map post-process))
+     (map post-process)
+     (map post-process-contexts))
     (catch Exception e
       (log/error (str "error in search/search-items: " e " - param was: " q))
       (throw e))))
@@ -77,7 +93,9 @@
                            :join-ids            (join-ids opts)
                            :inverted-mode?      (:secondary-contexts-inverted opts)}
                           ctx))
-        results (map post-process (seq issues))]
+        results (->> (seq issues)
+                     (map post-process)
+                     (map post-process-contexts))]
     (when (and limit (> (count results) limit)) 
       (throw (Exception. "got more results than 'limit' allows. impl broken!")))
     results))
@@ -146,8 +164,7 @@
        (map #(do [(count (second %)) (first (second %))]))
        (sort-by first)
        reverse
-       (map (fn [[count [id title]]]
-              [(Integer/parseInt (name id)) [title count]]))
+       (map (fn [[count [id title]]] [id [title count]]))
        (sort-secondary-contexts db highlighted-secondary-contexts)))
 
 ;; TODO this should probably go to repository.clj
