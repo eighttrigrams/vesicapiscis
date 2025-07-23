@@ -14,10 +14,10 @@
             :where  [:= :collections.item_id selected-context-id]})]])
 
 (defn fetch-items
-  [q {:keys [selected-context all-items? link-context link-issue] :as opts}]
+  [q {:keys [selected-context-id all-items? link-context link-issue] :as opts}]
   (let [{:keys [limit]} opts
         exclusion-clause (when (or link-context link-issue)
-                           (exclusion-clause (:id (:selected-context opts))
+                           (exclusion-clause selected-context-id
                                              (if link-issue
                                                :issues
                                                :contexts)))]
@@ -27,8 +27,8 @@
       :where    [:and
                  (search.helpers/get-search-clause q)
                  (when-not all-items? [:= :issues.is_context true])
-                 (when selected-context [:not [:= :issues.id (:id selected-context)]])
-                 (when selected-context exclusion-clause)]
+                 (when selected-context-id [:not [:= :issues.id selected-context-id]])
+                 (when selected-context-id exclusion-clause)]
       :order-by [[(if all-items? 
                    :issues.updated_at
                    :issues.updated_at_ctx) :desc]]

@@ -89,7 +89,7 @@
 (deftest search-contexts-filtering
   (test-with-reset-db-and-time "search-contexts with filtering options"
     (let [[context-1 _context-2 _context-3] (create-contexts)
-          results (search-items db "" {:selected-context context-1})]
+          results (search-items db "" {:selected-context-id (:id context-1)})]
       ;; Should exclude the selected context from results
       (is (not (some #(= (:id context-1) (:id %)) results)))
       (is (some #(= "Context Two" (:title %)) results))
@@ -127,7 +127,7 @@
           ;; Test with selected-context that has issue relationships via collections table
           ;; context-1 and context-2 both contain the same issue, so context-2 should be excluded
           results-with-context (search-items db "" {:link-context true
-                                                    :selected-context issue-1})]
+                                                    :selected-context-id (:id issue-1)})]
       ;; Should exclude context-1 (selected) and context-2 (shares issues with context-1)  
       ;; Should include context-3 (doesn't share issues with context-1)
       (is (= 1 (count results-with-context)))

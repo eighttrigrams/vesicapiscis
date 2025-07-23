@@ -16,6 +16,7 @@
 
 (defn search-items
   [db q opts]
+  (when (:selected-context opts) (log/warn "Didn't expect 'selected-context' here. Did you mean to pass 'selected-context-id'?"))
   (try
     (->>
      (search.items/fetch-items q opts)
@@ -71,7 +72,9 @@
    selected-context-id 
    {:keys [link-issue] :as opts}
    {:keys [_limit _force-limit?] :as ctx}]
-  (when link-issue (log/warn "'link-issue' shouldn't be supplied here any longer"))
+  (when link-issue 
+    ;; TODO throw error
+    (log/warn "'link-issue' shouldn't be supplied here any longer"))
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)]
     (->> (do-fetch-issues 
@@ -82,6 +85,24 @@
                  #_(when link-issue {:link-issue link-issue})
                  ctx))
          (map post-process))))
+
+(defn search 
+  "Prefer calling search-items or search-related-items"
+  [db q selected-context-id {:keys [link-issue] :as opts} ctx]
+  (log/info (str "search:" selected-context-id " link-issue:" link-issue))
+  (if selected-context-id
+   (if link-issue
+     (search-items db 
+                   q
+                   (assoc opts
+                          :all-items? true
+                          :selected-context-id selected-context-id))
+     (search-related-items db 
+                           q
+                           selected-context-id
+                           opts
+                           ctx))
+    (search-items db q (assoc opts :all-items? true))))
 
 (defn- try-parse [item]
   (try (Integer/parseInt item)
