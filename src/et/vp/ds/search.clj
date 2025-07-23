@@ -156,6 +156,11 @@
                                             (map (fn [[k [val title]]] [k [val title false]])))]
     (concat front (reverse (sort-by #(get-in % [1 1]) back)))))
 
+;; what i don't completely like that this function here, in contrast
+;; to the other functions in this namespace, depends on the :data 
+;; inside the items, whereas the others don't (and deliberately so, after
+;; the refactoring to do all the query logic as sql, as it should be
+;; instead of after the fact clojure filtering).
 (defn fetch-aggregated-contexts 
   [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
        :as opts}]
