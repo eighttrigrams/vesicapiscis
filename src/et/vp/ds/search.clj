@@ -81,7 +81,7 @@
           q
           selected-context-id
           (merge opts
-                 (when link-issue {:link-issue link-issue})
+                 #_(when link-issue {:link-issue link-issue})
                  ctx))
          (map post-process))))
 
