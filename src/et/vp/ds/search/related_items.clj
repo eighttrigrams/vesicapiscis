@@ -66,7 +66,7 @@
 (defn- limit' [q 
                {:keys [selected-context exclude-id?]}
                {:keys [force-limit? limit]}]
-  (when (or (and (= "" q)
+  (when (or (and (empty? q)
                  (not selected-context))
             ;; TODO not sure if that param is still needed
             force-limit?
