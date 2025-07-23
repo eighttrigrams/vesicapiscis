@@ -44,68 +44,54 @@
   (not (or secondary-contexts-inverted 
            secondary-contexts-unassigned-selected)))
 
-(defn- join-ids [selected-context]
-  (let [current-view                (-> selected-context :data :views :current)
-        selected-secondary-contexts (-> current-view :selected-secondary-contexts)] 
+(defn- join-ids [opts]
+  (let [selected-secondary-contexts (:selected-secondary-contexts opts)] 
     (when (and (seq selected-secondary-contexts)  
-               (or (no-modifiers-selected? current-view)
-                   (:secondary-contexts-inverted current-view)))
+               (or (no-modifiers-selected? opts)
+                   (:secondary-contexts-inverted opts)))
       selected-secondary-contexts)))
 
 (defn- do-fetch-issues 
-  [db {:keys [selected-context link-issue limit force-limit?]
-       :as   state} search-mode]
-  (let [selected-context-id (:id selected-context)
-        current-view (-> selected-context :data :views :current)
-        issues (do-query db 
+  [db q selected-context-id {:keys [link-issue limit force-limit? search-mode]
+                             :as   opts}]
+  (let [issues (do-query db 
                          (search.related-items/fetch-items 
-                          (or (:q state) "") 
+                          (or q 
+                              ;; TODO shouldn't be necessary the or here
+                              "") 
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode
-                           :unassigned-mode?    (:secondary-contexts-unassigned-selected current-view)
-                           :join-ids            (join-ids selected-context)
-                           :inverted-mode?      (:secondary-contexts-inverted current-view)
+                           :unassigned-mode?    (:secondary-contexts-unassigned-selected opts)
+                           :join-ids            (join-ids opts)
+                           :inverted-mode?      (:secondary-contexts-inverted opts)
                            :exclude-id? link-issue}
                           {:limit (or limit 500)
                            :force-limit? force-limit?}))]
     (seq issues)))
 
-(defn modify [_opts selected-context]
-  (when selected-context
-    (let [current-view (-> selected-context :data :views :current)]
-      (cond-> selected-context
-        (and (seq (:selected-secondary-contexts current-view))  
-             (:secondary-contexts-unassigned-selected current-view)
-             (not (:secondary-contexts-inverted current-view)))
-        (assoc-in  
-         [:data :views :current :secondary-contexts-unassigned-selected] nil)))))
+(defn modify [opts]
+  (cond-> opts
+    (and (seq (:selected-secondary-contexts opts))  
+         (:secondary-contexts-unassigned-selected opts)
+         (not (:secondary-contexts-inverted opts)))
+    (assoc :secondary-contexts-unassigned-selected nil)))
 
-(defn- search-related-items'
-  [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
-       :as opts}]
-  (let [opts (update opts :selected-context (partial modify opts))]
-    (->> (do-fetch-issues db opts search-mode)
-         (map post-process))))
-
-(defn search-related-items 
+(defn search-related-items
   [db 
    q 
    selected-context-id 
    {:keys [link-issue] :as opts}
    {:keys [_limit _force-limit?] :as ctx}]
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
-  (let [selected-context {:id   selected-context-id
-                          ;; TODO get rid of this now, our impl doesn't depend on this anymore
-                          :data {:views {:current (select-keys
-                                                   opts
-                                                   [:secondary-contexts-inverted
-                                                    :secondary-contexts-unassigned-selected
-                                                    :selected-secondary-contexts
-                                                    :search-mode])}}}]
-    (search-related-items' db (merge {:selected-context selected-context
-                              :q q}
-                             (when link-issue {:link-issue link-issue})
-                             ctx))))
+  (let [opts (modify opts)]
+    (->> (do-fetch-issues 
+          db 
+          q
+          selected-context-id
+          (merge opts
+                 (when link-issue {:link-issue link-issue})
+                 ctx))
+         (map post-process))))
 
 (defn- try-parse [item]
   (try (Integer/parseInt item)
@@ -161,12 +147,13 @@
 (defn fetch-aggregated-contexts 
   [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
        :as opts}]
-  (let [issues (search-related-items' db (-> opts
-                                      (assoc :q "")
-                                      (assoc-in [:selected-context :data :views :current :search-mode] 0)
-                                      (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
-                                      (assoc-in [:selected-context :data :views :current :secondary-contexts-inverted] false)
-                                      (assoc-in [:selected-context :data :views :current :secondary-contexts-unassigned-selected] false)))]
+  (let [issues (search-related-items 
+                db 
+                "" 
+                (:id (:selected-context opts))
+                {}
+                ;; TODO review
+                {:limit 500})]
     (->> issues
          (map #(get-in % [:data :contexts]))
          (map #(filter (fn [[_id {:keys [show-badge?]}]] show-badge?) %))
