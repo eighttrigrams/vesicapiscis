@@ -57,12 +57,11 @@
                                :asc
                                :desc)])))])
 
-(defn- limit' [{:keys [selected-context-id exclude-id?]}
+(defn- limit' [{:keys [selected-context-id]}
                {:keys [force-limit? limit]}]
   (when (or (not selected-context-id)
             ;; TODO not sure if that param is still needed
-            force-limit?
-            exclude-id?)
+            force-limit?)
      {:limit limit}))
 
 (defn- wrap-given-issues-query-with-limit
