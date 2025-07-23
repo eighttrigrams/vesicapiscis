@@ -15,14 +15,15 @@
           :integer-short-titles-asc 2
           :integer-short-titles-desc 3
           0)
-        opts (assoc opts :search-mode search-mode)]
+        opts (dissoc (assoc opts :search-mode search-mode) :q)]
+    ;; Note how this strucutre is mimicked in repository/search function
     (if selected-context
       (if link-issue
         ;; TODO consider moving all these tests using this to search_items_test
-        (search/search-items db (assoc opts 
-                                       :all-items? true
-                                       :link-issue true
-                                       :selected-context selected-context))
+        (search/search-items db q (assoc opts 
+                                         :all-items? true
+                                         :link-issue true
+                                         :selected-context selected-context))
         (search/search-related-items
          db
          q
@@ -30,7 +31,7 @@
          (merge opts (when link-issue {:link-issue link-issue}))
          {}))
       ;; TODO consider moving all these tests using this to search_items_test
-      (search/search-items db (assoc opts :all-items? true)))))
+      (search/search-items db q (assoc opts :all-items? true)))))
 
 (defn- q-titles [selected-context opts]
   (mapv :title (q-all selected-context opts)))

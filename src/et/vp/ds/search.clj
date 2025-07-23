@@ -1,6 +1,5 @@
 (ns et.vp.ds.search
-  (:require [clojure.set :as set]
-            [cambium.core :as log]
+  (:require [cambium.core :as log]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [et.vp.ds.search.related-items :as search.related-items]
@@ -9,29 +8,22 @@
              :refer [un-namespace-keys post-process-base]
              :as helpers]))
 
-;; TODO this ns should be completely oblivious of the :data data-structure inside the items
-
 (defn- post-process [result]
   (let [{:keys [annotation issue_annotation] :as r} (post-process-base result)]
     (cond-> r 
       (empty? annotation)
       (assoc :annotation issue_annotation))))
 
-;; TODO make it take a q param, and an (optional, in the beginning) opts argument
 (defn search-items
-  [db opts]
-  (let [opts (if (string? opts) 
-               {:q opts}
-               opts)
-        {:keys [q]} opts]
-    (try
-      (->>
-       (search.items/fetch-items q opts)
-       (jdbc/execute! db)
-       (map post-process))
-      (catch Exception e
-        (log/error (str "error in search/search-items: " e " - param was: " q))
-        (throw e)))))
+  [db q opts]
+  (try
+    (->>
+     (search.items/fetch-items q opts)
+     (jdbc/execute! db)
+     (map post-process))
+    (catch Exception e
+      (log/error (str "error in search/search-items: " e " - param was: " q))
+      (throw e))))
 
 (defn- do-query [db formatted-query]
   #_(prn "???" formatted-query)
