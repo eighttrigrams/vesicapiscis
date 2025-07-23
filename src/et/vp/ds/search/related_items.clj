@@ -67,9 +67,7 @@
 (defn- limit' [q 
                {:keys [selected-context-id exclude-id?]}
                {:keys [force-limit? limit]}]
-  (log/info (str "limit'" (empty? q) ".." selected-context-id))
-  (when (or (and (empty? q)
-                 (not selected-context-id))
+  (when (or (not selected-context-id)
             ;; TODO not sure if that param is still needed
             force-limit?
             exclude-id?)
