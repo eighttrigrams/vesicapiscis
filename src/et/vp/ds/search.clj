@@ -4,7 +4,7 @@
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
             [et.vp.ds.search.related-items :as search.related-items]
-            [et.vp.ds.search.contexts :as search.contexts]
+            [et.vp.ds.search.items :as search.items]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
              :as helpers]))
@@ -26,7 +26,7 @@
         {:keys [q]} opts]
     (try
       (->>
-       (search.contexts/fetch-items q opts)
+       (search.items/fetch-items q opts)
        (jdbc/execute! db)
        (map post-process))
       (catch Exception e

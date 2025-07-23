@@ -94,7 +94,9 @@
         join-ids (when selected-context-id join-ids)
         or-mode? (when join-ids inverted-mode?)]
     (merge
-     {:select (if selected-context-id
+     {:select (if
+               ;; TODO get rid of if; use items search instead of else branch
+               selected-context-id
                 (vec (concat search.core/select [:collections.annotation]))
                 search.core/select)
       :from   :issues
@@ -105,6 +107,7 @@
                    (and-query join-ids unassigned-mode? inverted-mode?)))
                (search.helpers/get-search-clause q)
                (get-events-exist-clause search-mode)
+               ;; TODO get rid of when; use items search instead
                (when selected-context-id
                  [:= :collections.container_id [:raw selected-context-id]])
                (when (or (= 2 search-mode) (= 3 search-mode))
@@ -115,6 +118,7 @@
                   [:<> :issues.id [:inline exclude-id]])]}
      {:order-by (order-by search-mode)}
      (limit' q opts ctx)
+     ;; TODO get rid of when; use items search instead
      (when selected-context-id
        {:join [:collections [:= :issues.id :collections.item_id]]}))))
 
