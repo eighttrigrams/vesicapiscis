@@ -8,6 +8,7 @@
              :issues.sort_idx
              :issues.id
              :issues.data
+             ;; TODO make tags optional; i need it only in tracker-mcp
              :issues.tags
              [:issues.annotation :issue_annotation]
              :issues.is_context
