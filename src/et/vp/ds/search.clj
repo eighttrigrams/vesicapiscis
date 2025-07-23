@@ -48,9 +48,7 @@
                              :as   opts}]
   (let [issues (do-query db 
                          (search.related-items/fetch-items 
-                          (or q 
-                              ;; TODO shouldn't be necessary the or here
-                              "") 
+                          q
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected opts)
