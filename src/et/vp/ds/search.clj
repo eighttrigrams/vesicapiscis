@@ -174,5 +174,6 @@
          (map #(do [(count (second %)) (first (second %))]))
          (sort-by first)
          reverse
-         (map (fn [[count [id title]]] [id [title count]]))
+         (map (fn [[count [id title]]]
+                [(Integer/parseInt (name id)) [title count]]))
          (sort-secondary-contexts db highlighted-secondary-contexts))))
