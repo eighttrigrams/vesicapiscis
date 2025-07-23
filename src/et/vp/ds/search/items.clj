@@ -25,7 +25,7 @@
                  (when-not all-items? [:= :issues.is_context true])
                  (when selected-context [:not [:= :issues.id (:id selected-context)]])
                  (when selected-context exclusion-clause)]
-      :order-by [(if all-items? 
+      :order-by [[(if all-items? 
                    :issues.updated_at
-                   :issues.updated_at_ctx) :desc]
+                   :issues.updated_at_ctx) :desc]]
       :limit (or limit 100)})))
