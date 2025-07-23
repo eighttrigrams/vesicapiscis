@@ -1,5 +1,6 @@
 (ns et.vp.ds.search.related-items
-  (:require [et.vp.ds.search.core :as search.core]
+  (:require [cambium.core :as log]
+            [et.vp.ds.search.core :as search.core]
             [et.vp.ds.search.helpers :as search.helpers]
             [honey.sql :as sql]))
 
@@ -66,6 +67,7 @@
 (defn- limit' [q 
                {:keys [selected-context-id exclude-id?]}
                {:keys [force-limit? limit]}]
+  (log/info (str "limit'" (empty? q) ".." selected-context-id))
   (when (or (and (empty? q)
                  (not selected-context-id))
             ;; TODO not sure if that param is still needed
