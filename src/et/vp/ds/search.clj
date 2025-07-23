@@ -2,11 +2,11 @@
   (:require [cambium.core :as log]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
-            [et.vp.ds.search.related-items :as related-items]
-            [et.vp.ds.search.items :as items]
+            [et.vp.ds.search.core :as core]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
-             :as helpers]))
+             :as helpers]
+            [et.vp.ds.search :as search]))
 
 (defn- post-process [result]
   (let [{:keys [annotation issue_annotation] :as r} (post-process-base result)]
@@ -27,7 +27,7 @@
     (throw (IllegalArgumentException. "Must set 'all-items?' on 'link-issue'")))
   (try
     (->>
-     (items/search q opts ctx)
+     (core/search-items q opts ctx)
      (jdbc/execute! db)
      (map post-process))
     (catch Exception e
@@ -69,7 +69,7 @@
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)
         issues (do-query db 
-                         (related-items/search 
+                         (core/search-related-items
                           q
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode
