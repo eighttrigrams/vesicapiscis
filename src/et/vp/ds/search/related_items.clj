@@ -75,7 +75,7 @@
     :as   opts}
    {:keys [limit]
     :as ctx}]
-  (when-not limit (throw (IllegalArgumentException. "no limit provided")))
+  (when-not limit (throw (IllegalArgumentException. "no 'limit' provided")))
   (let [or-mode? (when join-ids inverted-mode?)]
     (merge
      {:select (vec (concat core/select [:collections.annotation]))
