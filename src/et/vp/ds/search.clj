@@ -15,9 +15,16 @@
       (assoc :annotation issue_annotation))))
 
 (defn search-items
-  [db q opts ctx]
+  [db 
+   q 
+   {:keys [all-items? link-context link-issue] :as opts}
+   ctx]
   (when (:selected-context opts) 
     (throw (IllegalArgumentException. "Didn't expect 'selected-context' here. Did you mean to pass 'selected-context-id'?")))
+  (when (and link-context all-items?)
+    (throw (IllegalArgumentException. "Can't combine 'all-items?' and 'link-context'")))
+  (when (and link-issue (not all-items?))
+    (throw (IllegalArgumentException. "Must set 'all-items?' on 'link-issue'")))
   (try
     (->>
      (items/search q opts ctx)

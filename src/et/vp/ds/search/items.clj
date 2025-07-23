@@ -13,7 +13,6 @@
             :from   :collections
             :where  [:= :collections.item_id selected-context-id]})]])
 
-;; TODO when we specify link-issue, we shouldn't have to also pass all-items? since this is implied; same with link-context
 (defn search
   [q 
    {:keys [selected-context-id all-items? link-context link-issue] :as _opts}
