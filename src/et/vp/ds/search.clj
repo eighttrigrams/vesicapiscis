@@ -15,12 +15,12 @@
       (assoc :annotation issue_annotation))))
 
 (defn search-items
-  [db q opts]
+  [db q opts ctx]
   (when (:selected-context opts) 
     (throw (IllegalArgumentException. "Didn't expect 'selected-context' here. Did you mean to pass 'selected-context-id'?")))
   (try
     (->>
-     (items/search q opts)
+     (items/search q opts ctx)
      (jdbc/execute! db)
      (map post-process))
     (catch Exception e
@@ -86,13 +86,14 @@
                    q
                    (assoc opts
                           :all-items? true
-                          :selected-context-id selected-context-id))
+                          :selected-context-id selected-context-id)
+                   ctx)
      (search-related-items db 
                            q
                            selected-context-id
                            opts
                            ctx))
-    (search-items db q (assoc opts :all-items? true))))
+    (search-items db q (assoc opts :all-items? true) ctx)))
 
 (defn- try-parse [item]
   (try (Integer/parseInt item)

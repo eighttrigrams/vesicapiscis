@@ -14,22 +14,23 @@
             :where  [:= :collections.item_id selected-context-id]})]])
 
 (defn search
-  [q {:keys [selected-context-id all-items? link-context link-issue] :as opts}]
-  (let [{:keys [limit]} opts
-        exclusion-clause (when (or link-context link-issue)
+  [q 
+   {:keys [selected-context-id all-items? link-context link-issue] :as _opts}
+   {:keys [limit] :as _ctx}]
+  (let [exclusion-clause (when (or link-context link-issue)
                            (exclusion-clause selected-context-id
                                              (if link-issue
                                                :issues
                                                :contexts)))]
     (sql/format  
-     {:select   core/select
-      :from     [:issues]
-      :where    [:and
-                 (search.helpers/get-search-clause q)
-                 (when-not all-items? [:= :issues.is_context true])
-                 (when selected-context-id [:not [:= :issues.id selected-context-id]])
-                 (when selected-context-id exclusion-clause)]
-      :order-by [[(if all-items? 
-                   :issues.updated_at
-                   :issues.updated_at_ctx) :desc]]
-      :limit (or limit 100)})))
+     (merge {:select   core/select
+             :from     [:issues]
+             :where    [:and
+                        (search.helpers/get-search-clause q)
+                        (when-not all-items? [:= :issues.is_context true])
+                        (when selected-context-id [:not [:= :issues.id selected-context-id]])
+                        (when selected-context-id exclusion-clause)]
+             :order-by [[(if all-items? 
+                           :issues.updated_at
+                           :issues.updated_at_ctx) :desc]]}
+            (when limit {:limit limit})))))
