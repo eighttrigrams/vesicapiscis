@@ -5,7 +5,7 @@
    [et.vp.ds.search :as search]
    [et.vp.ds.search-test-helpers :refer [db test-with-reset-db-and-time]]))
 
-(defn- q-all 
+(defn- related-items-q-all 
   [selected-context {:keys [q search-mode] :as opts}]
   (let [search-mode 
         (case search-mode
@@ -16,22 +16,29 @@
           :integer-short-titles-desc 3
           0)
         opts (dissoc (assoc opts :search-mode search-mode) :q)]
-    ;; TODO this is not completely fortunate. We probably want to test search-related-items
-    ;; and move stuff around. Or we want to test everything in one test file.
-    (search/search db q (:id selected-context) opts {})))
+    (search/search-related-items db q (:id selected-context) opts {})))
 
-(defn- q-titles [selected-context opts]
-  (mapv :title (q-all selected-context opts)))
+(defn- related-items-q-titles [selected-context opts]
+  (mapv :title (related-items-q-all selected-context opts)))
 
-(defn- q
+(defn- related-items-q
   "This fn is in place because I may want to do the refactoring where
    the search result isn't any longer just the first item of the vector
    but the only result."
-  ([selected-context] (q selected-context {}))
+  ([selected-context] (related-items-q selected-context {}))
   ([selected-context opts]
    (:title 
     (first
-     (q-all selected-context opts)))))
+     (related-items-q-all selected-context opts)))))
+
+(defn- items-q-all [q opts]
+  (search/search-items db q opts {}))
+
+(defn- items-q-titles [q opts]
+  (mapv :title (items-q-all q opts)))
+
+(defn- items-q [q opts]
+  (:title (first (items-q-all q opts))))
 
 (defn- new-item 
   "In place because I want to end up having only new-item, 
@@ -77,39 +84,39 @@
 (deftest search
   (test-with-reset-db-and-time "base case - overview"
     (create-issues {})
-    (is (= "title-2-2" (q nil)))
-    (is (= "title-2-1" (q nil {:q "abc"}))))
+    (is (= "title-2-2" (items-q "" {:all-items? true})))
+    (is (= "title-2-1" (items-q "abc" {:all-items? true}))))
   (test-with-reset-db-and-time "in context"
     (let [[item-1 item-2] (create-issues {})]
-      (is (= "title-1-2" (q item-1)))
-      (is (= "title-1-1" (q item-1 {:search-mode :last-touched-first})))
-      (is (= "title-1-1" (q item-1 {:q "abc"})))
-      (is (= "title-2-2" (q item-2)))
-      (is (= "title-2-1" (q item-2 {:search-mode :last-touched-first})))
-      (is (= "title-2-1" (q item-2 {:q "abc"}))))))
+      (is (= "title-1-2" (related-items-q item-1)))
+      (is (= "title-1-1" (related-items-q item-1 {:search-mode :last-touched-first})))
+      (is (= "title-1-1" (related-items-q item-1 {:q "abc"})))
+      (is (= "title-2-2" (related-items-q item-2)))
+      (is (= "title-2-1" (related-items-q item-2 {:search-mode :last-touched-first})))
+      (is (= "title-2-1" (related-items-q item-2 {:q "abc"}))))))
 
 (deftest events
   (test-with-reset-db-and-time 
    "base case - overview"
    (create-issues {})
-   (is (= "title-2-2" (q nil {}))))
+   (is (= "title-2-2" (items-q "" {:all-items? true}))))
   (test-with-reset-db-and-time 
    "in context"
    (let [[_item-1 item-2] (create-issues {})]
-     (is (= "title-2-2" (q item-2 {:search-mode :past-events})))))
+     (is (= "title-2-2" (related-items-q item-2 {:search-mode :past-events})))))
   (test-with-reset-db-and-time 
    "last added mode"
    (let [[item-1 item-2] (create-issues {})]
-     (is (= "title-2-2" (q nil {:search-mode :last-added})))
-     (is (= "title-1-2" (q item-1 {:search-mode :last-added})))
-     (is (= "title-2-2" (q item-2 {:search-mode :last-added}))))))
+     (is (= "title-2-2" (items-q "" {:search-mode :last-added :all-items? true})))
+     (is (= "title-1-2" (related-items-q item-1 {:search-mode :last-added})))
+     (is (= "title-2-2" (related-items-q item-2 {:search-mode :last-added}))))))
 
 (deftest sort-modes
   (test-with-reset-db-and-time 
    "sort ascending and descending (only available in context)"
    (let [[item-1 _item-2] (create-issues {:integer-short-titles? true})]
-     (is (= "title-1-2" (q item-1 {:search-mode :integer-short-titles-asc})))
-     (is (= "title-1-1" (q item-1 {:search-mode :integer-short-titles-desc}))))))
+     (is (= "title-1-2" (related-items-q item-1 {:search-mode :integer-short-titles-asc})))
+     (is (= "title-1-1" (related-items-q item-1 {:search-mode :integer-short-titles-desc}))))))
 
 (defn- create-issues-for-link-issue-test []
   (let [item-1    (new-item db {:title       "title-1"})
@@ -125,8 +132,12 @@
   (test-with-reset-db-and-time
    "link-issue"
    (let [[item-1 item-2] (create-issues-for-link-issue-test)]
-     (is (= ["title-2"] (q-titles item-1 {:link-issue :context})))
-     (is (= ["title-4" "title-1"] (q-titles item-2 {:link-issue :context}))))))
+     (is (= ["title-2"] (items-q-titles "" {:link-issue true 
+                                            :selected-context-id (:id item-1)
+                                            :all-items? true})))
+     (is (= ["title-4" "title-1"] (items-q-titles "" {:link-issue true
+                                                      :selected-context-id (:id item-2)
+                                                      :all-items? true}))))))
 
 (defn- create-issues-for-intersection-tests [{add-one? :add-one?}]
   (let [item-1    (new-item db {:title       "title-1"})
@@ -150,33 +161,33 @@
 (deftest intersections
   (test-with-reset-db-and-time "base case - overview"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
-      (is (= ["title-4" "title-3"] (q-titles item-1 {}))) ;; sanity check
-      (is (= ["title-3"] (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))})))
-      (is (= ["title-4"] (q-titles item-1 {:secondary-contexts-unassigned-selected true})))
-      (is (= ["title-3"] (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
+      (is (= ["title-4" "title-3"] (related-items-q-titles item-1 {}))) ;; sanity check
+      (is (= ["title-3"] (related-items-q-titles item-1 {:selected-secondary-contexts (list (:id item-2))})))
+      (is (= ["title-4"] (related-items-q-titles item-1 {:secondary-contexts-unassigned-selected true})))
+      (is (= ["title-3"] (related-items-q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
                                             ;; when contexts list present, the following should have no effect
                                             :secondary-contexts-unassigned-selected true})))))
   (test-with-reset-db-and-time "base case - or"
     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
       (is (= ["title-4"] 
-             (q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
+             (related-items-q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
                                :secondary-contexts-inverted true})))
       (is (= []  
-             (q-titles item-1 {:selected-secondary-contexts (list (:id item-2) (:id item-1))
+             (related-items-q-titles item-1 {:selected-secondary-contexts (list (:id item-2) (:id item-1))
                                :secondary-contexts-inverted true})))))
   (test-with-reset-db-and-time "base case - inverted and unassigned at the same time"
     (let [[item-1 _item-2] (create-issues-for-intersection-tests {})]
       (is (= ["title-3"]
-             (q-titles item-1 {:secondary-contexts-inverted            true
+             (related-items-q-titles item-1 {:secondary-contexts-inverted            true
                                :secondary-contexts-unassigned-selected true})))))
   (test-with-reset-db-and-time "base case - inverted and unassigned at the same time + secondary selected contexts"
      (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
        (is (= []
-              (q-titles item-1 {:secondary-contexts-inverted            true
+              (related-items-q-titles item-1 {:secondary-contexts-inverted            true
                                 :secondary-contexts-unassigned-selected true
                                 :selected-secondary-contexts            (list (:id item-2))}))))
      (let [[item-1 item-2] (create-issues-for-intersection-tests {:add-one? true})]
        (is (= ["title-6"]
-              (q-titles item-1 {:secondary-contexts-inverted            true
+              (related-items-q-titles item-1 {:secondary-contexts-inverted            true
                                 :secondary-contexts-unassigned-selected true
                                 :selected-secondary-contexts            (list (:id item-2))}))))))

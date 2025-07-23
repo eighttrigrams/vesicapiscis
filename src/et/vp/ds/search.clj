@@ -75,26 +75,6 @@
       (throw (Exception. "got more results than 'limit' allows. impl broken!")))
     results))
 
-(defn search 
-  "Prefer calling search-items or search-related-items"
-  [db q selected-context-id {:keys [link-issue selected-context] :as opts} ctx]
-  (log/info (str "search:" selected-context-id " link-issue:" link-issue))
-  (when selected-context (throw (IllegalArgumentException. "'selected-context' not expected as an argument here")))
-  (if selected-context-id
-   (if link-issue
-     (search-items db 
-                   q
-                   (assoc opts
-                          :all-items? true
-                          :selected-context-id selected-context-id)
-                   ctx)
-     (search-related-items db 
-                           q
-                           selected-context-id
-                           opts
-                           ctx))
-    (search-items db q (assoc opts :all-items? true) ctx)))
-
 (defn- try-parse [item]
   (try (Integer/parseInt item)
        (catch Exception _e nil)))
