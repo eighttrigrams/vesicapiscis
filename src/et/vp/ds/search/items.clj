@@ -5,11 +5,13 @@
             [cambium.core :as log]))
 
 (defn fetch-items
-  [q {:keys [selected-context all-items? link-context] :as opts}]
+  [q {:keys [selected-context all-items? link-context link-issue] :as opts}]
   (let [{:keys [limit]} opts
-        exclusion-clause (when link-context
+        exclusion-clause (when (or link-context link-issue)
                            (core/exclusion-clause (:id (:selected-context opts))
-                                                  :contexts))]
+                                                  (if link-issue
+                                                    :issues
+                                                    :contexts)))]
     (log/info (str "fetch-items limit: " limit ". -> " (or limit 100)))
     (sql/format  
      {:select   core/select

@@ -17,12 +17,18 @@
           0)
         opts (assoc opts :search-mode search-mode)]
     (if selected-context
-      (search/search-related-items
-       db
-       q
-       (:id selected-context)
-       (merge opts (when link-issue {:link-issue link-issue}))
-       {})
+      (if link-issue
+        ;; TODO consider moving all these tests using this to search_items_test
+        (search/search-items db (assoc opts 
+                                       :all-items? true
+                                       :link-issue true
+                                       :selected-context selected-context))
+        (search/search-related-items
+         db
+         q
+         (:id selected-context)
+         (merge opts (when link-issue {:link-issue link-issue}))
+         {}))
       ;; TODO consider moving all these tests using this to search_items_test
       (search/search-items db (assoc opts :all-items? true)))))
 

@@ -82,6 +82,7 @@
    selected-context-id 
    {:keys [link-issue] :as opts}
    {:keys [_limit _force-limit?] :as ctx}]
+  (when link-issue (log/warn "'link-issue' shouldn't be supplied here any longer"))
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)]
     (->> (do-fetch-issues 
