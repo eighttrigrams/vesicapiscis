@@ -80,7 +80,7 @@
         (assoc-in  
          [:data :views :current :secondary-contexts-unassigned-selected] nil)))))
 
-(defn- search-issues'
+(defn- search-related-items'
   [db {{{{{:keys [search-mode]} :current} :views} :data} :selected-context
        :as opts}]
   (let [opts (update opts :selected-context (partial modify opts))]
@@ -95,13 +95,14 @@
    {:keys [_limit _force-limit?] :as ctx}]
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [selected-context {:id   selected-context-id
+                          ;; TODO get rid of this now, our impl doesn't depend on this anymore
                           :data {:views {:current (select-keys
                                                    opts
                                                    [:secondary-contexts-inverted
                                                     :secondary-contexts-unassigned-selected
                                                     :selected-secondary-contexts
                                                     :search-mode])}}}]
-    (search-issues' db (merge {:selected-context selected-context
+    (search-related-items' db (merge {:selected-context selected-context
                               :q q}
                              (when link-issue {:link-issue link-issue})
                              ctx))))
@@ -160,7 +161,7 @@
 (defn fetch-aggregated-contexts 
   [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
        :as opts}]
-  (let [issues (search-issues' db (-> opts
+  (let [issues (search-related-items' db (-> opts
                                       (assoc :q "")
                                       (assoc-in [:selected-context :data :views :current :search-mode] 0)
                                       (assoc-in [:selected-context :data :views :current :selected-secondary-contexts] [])
