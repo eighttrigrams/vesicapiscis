@@ -2,8 +2,8 @@
   (:require [cambium.core :as log]
             [next.jdbc :as jdbc]
             [honey.sql :as sql]
-            [et.vp.ds.search.related-items :as search.related-items]
-            [et.vp.ds.search.items :as search.items]
+            [et.vp.ds.search.related-items :as related-items]
+            [et.vp.ds.search.items :as items]
             [et.vp.ds.helpers
              :refer [un-namespace-keys post-process-base]
              :as helpers]))
@@ -20,7 +20,7 @@
     (throw (IllegalArgumentException. "Didn't expect 'selected-context' here. Did you mean to pass 'selected-context-id'?")))
   (try
     (->>
-     (search.items/fetch-items q opts)
+     (items/search q opts)
      (jdbc/execute! db)
      (map post-process))
     (catch Exception e
@@ -62,7 +62,7 @@
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)
         issues (do-query db 
-                         (search.related-items/fetch-items 
+                         (related-items/search 
                           q
                           {:selected-context-id selected-context-id
                            :search-mode         search-mode

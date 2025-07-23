@@ -13,7 +13,7 @@
             :from   :collections
             :where  [:= :collections.item_id selected-context-id]})]])
 
-(defn fetch-items
+(defn search
   [q {:keys [selected-context-id all-items? link-context link-issue] :as opts}]
   (let [{:keys [limit]} opts
         exclusion-clause (when (or link-context link-issue)

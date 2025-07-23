@@ -94,7 +94,7 @@
      (limit' opts ctx)
      {:join [:collections [:= :issues.id :collections.item_id]]})))
 
-(defn fetch-items
+(defn search
   [q 
    opts
    ctx]
