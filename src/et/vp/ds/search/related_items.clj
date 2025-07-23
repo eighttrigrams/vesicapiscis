@@ -1,6 +1,6 @@
 (ns et.vp.ds.search.related-items
   (:require [cambium.core :as log]
-            [et.vp.ds.search.core :as search.core]
+            [et.vp.ds.search.core :as core]
             [et.vp.ds.search.helpers :as search.helpers]
             [honey.sql :as sql]))
 
@@ -45,12 +45,6 @@
     [:not [:in :issues.id
            (or-partial join-ids)]]))
 
-(defn- exclusion-clause [exclude-id]
-  [:not [:in :issues.id
-         {:select :collections.item_id
-          :from   :collections
-          :where  [:= :collections.container_id [:inline exclude-id]]}]])
-
 (defn- order-by [search-mode]
   [(if (= search-mode 5)
      [:issues.inserted_at :desc]
@@ -64,8 +58,7 @@
                                :asc
                                :desc)])))])
 
-(defn- limit' [q 
-               {:keys [selected-context-id exclude-id?]}
+(defn- limit' [{:keys [selected-context-id exclude-id?]}
                {:keys [force-limit? limit]}]
   (when (or (not selected-context-id)
             ;; TODO not sure if that param is still needed
@@ -97,8 +90,8 @@
      {:select (if
                ;; TODO get rid of if; use items search instead of else branch
                selected-context-id
-                (vec (concat search.core/select [:collections.annotation]))
-                search.core/select)
+                (vec (concat core/select [:collections.annotation]))
+                core/select)
       :from   :issues
       :where  [:and
                (when (or join-ids unassigned-mode?)
@@ -113,11 +106,11 @@
                (when (or (= 2 search-mode) (= 3 search-mode))
                  [:> :sort_idx 0])
                (when exclude-id
-                 (exclusion-clause exclude-id))
+                 (core/exclusion-clause exclude-id :issues))
                (when exclude-id
                   [:<> :issues.id [:inline exclude-id]])]}
      {:order-by (order-by search-mode)}
-     (limit' q opts ctx)
+     (limit' opts ctx)
      ;; TODO get rid of when; use items search instead
      (when selected-context-id
        {:join [:collections [:= :issues.id :collections.item_id]]}))))
