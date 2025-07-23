@@ -11,12 +11,12 @@
              :issues.updated_at
              :issues.date])
 
-(defn exclusion-clause [exclude-id mode]
+(defn exclusion-clause [selected-context-id mode]
   [:not [:in :issues.id 
          (if (= :issues mode)
            {:select :collections.item_id
             :from   :collections
-            :where  [:= :collections.container_id [:inline exclude-id]]}
+            :where  [:= :collections.container_id [:inline selected-context-id]]}
            {:select :collections.container_id
             :from   :collections
-            :where  [:= :collections.item_id exclude-id]})]])
+            :where  [:= :collections.item_id selected-context-id]})]])
