@@ -44,21 +44,6 @@
                    (:secondary-contexts-inverted opts)))
       selected-secondary-contexts)))
 
-(defn- do-fetch-issues 
-  [db q selected-context-id {:keys [limit force-limit? search-mode]
-                             :as   opts}]
-  (let [issues (do-query db 
-                         (search.related-items/fetch-items 
-                          q
-                          {:selected-context-id selected-context-id
-                           :search-mode         search-mode
-                           :unassigned-mode?    (:secondary-contexts-unassigned-selected opts)
-                           :join-ids            (join-ids opts)
-                           :inverted-mode?      (:secondary-contexts-inverted opts)}
-                          {:limit (or limit 500)
-                           :force-limit? force-limit?}))]
-    (seq issues)))
-
 (defn modify [opts]
   (cond-> opts
     (and (seq (:selected-secondary-contexts opts))  
@@ -70,21 +55,24 @@
   [db 
    q 
    selected-context-id 
-   {:keys [link-issue] :as opts}
-   {:keys [_limit _force-limit?] :as ctx}]
+   {:keys [link-issue search-mode] :as opts}
+   {:keys [limit force-limit?] :as _ctx}]
   (when link-issue 
     ;; TODO throw error
     (log/warn "'link-issue' shouldn't be supplied here any longer"))
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
-  (let [opts (modify opts)]
-    (->> (do-fetch-issues 
-          db 
-          q
-          selected-context-id
-          (merge opts
-                 #_(when link-issue {:link-issue link-issue})
-                 ctx))
-         (map post-process))))
+  (let [opts (modify opts)
+        issues (do-query db 
+                         (search.related-items/fetch-items 
+                          q
+                          {:selected-context-id selected-context-id
+                           :search-mode         search-mode
+                           :unassigned-mode?    (:secondary-contexts-unassigned-selected opts)
+                           :join-ids            (join-ids opts)
+                           :inverted-mode?      (:secondary-contexts-inverted opts)}
+                          {:limit        (or limit 500)
+                           :force-limit? force-limit?}))]
+    (map post-process (seq issues))))
 
 (defn search 
   "Prefer calling search-items or search-related-items"
