@@ -16,6 +16,8 @@
           :integer-short-titles-desc 3
           0)
         opts (dissoc (assoc opts :search-mode search-mode) :q)]
+    ;; TODO this is not completely fortunate. We probably want to test search-related-items
+    ;; and move stuff around. Or we want to test everything in one test file.
     (search/search db q (:id selected-context) opts {})))
 
 (defn- q-titles [selected-context opts]
