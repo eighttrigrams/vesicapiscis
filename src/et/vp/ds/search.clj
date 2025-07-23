@@ -52,7 +52,7 @@
       selected-secondary-contexts)))
 
 (defn- do-fetch-issues 
-  [db q selected-context-id {:keys [link-issue limit force-limit? search-mode]
+  [db q selected-context-id {:keys [limit force-limit? search-mode]
                              :as   opts}]
   (let [issues (do-query db 
                          (search.related-items/fetch-items 
@@ -63,8 +63,7 @@
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected opts)
                            :join-ids            (join-ids opts)
-                           :inverted-mode?      (:secondary-contexts-inverted opts)
-                           :exclude-id? link-issue}
+                           :inverted-mode?      (:secondary-contexts-inverted opts)}
                           {:limit (or limit 500)
                            :force-limit? force-limit?}))]
     (seq issues)))

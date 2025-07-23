@@ -75,23 +75,14 @@
            join-ids
            search-mode
            unassigned-mode?
-           inverted-mode?
-           exclude-id?]
+           inverted-mode?]
     :as   opts}
    {:keys [limit]
     :as ctx}]
   (when-not limit (throw (IllegalArgumentException. "no limit provided")))
-  (let [join-ids (when-not exclude-id? join-ids)
-        exclude-id (when exclude-id? selected-context-id)
-        selected-context-id (when-not exclude-id? selected-context-id)
-        join-ids (when selected-context-id join-ids)
-        or-mode? (when join-ids inverted-mode?)]
+  (let [or-mode? (when join-ids inverted-mode?)]
     (merge
-     {:select (if
-               ;; TODO get rid of if; use items search instead of else branch
-               selected-context-id
-                (vec (concat core/select [:collections.annotation]))
-                core/select)
+     {:select (vec (concat core/select [:collections.annotation]))
       :from   :issues
       :where  [:and
                (when (or join-ids unassigned-mode?)
@@ -100,20 +91,12 @@
                    (and-query join-ids unassigned-mode? inverted-mode?)))
                (search.helpers/get-search-clause q)
                (get-events-exist-clause search-mode)
-               ;; TODO get rid of when; use items search instead
-               (when selected-context-id
-                 [:= :collections.container_id [:raw selected-context-id]])
+               [:= :collections.container_id [:raw selected-context-id]]
                (when (or (= 2 search-mode) (= 3 search-mode))
-                 [:> :sort_idx 0])
-               (when exclude-id
-                 (core/exclusion-clause exclude-id :issues))
-               (when exclude-id
-                  [:<> :issues.id [:inline exclude-id]])]}
+                 [:> :sort_idx 0])]}
      {:order-by (order-by search-mode)}
      (limit' opts ctx)
-     ;; TODO get rid of when; use items search instead
-     (when selected-context-id
-       {:join [:collections [:= :issues.id :collections.item_id]]}))))
+     {:join [:collections [:= :issues.id :collections.item_id]]})))
 
 (defn fetch-items
   [q 
