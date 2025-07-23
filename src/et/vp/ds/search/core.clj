@@ -8,6 +8,7 @@
              :issues.sort_idx
              :issues.id
              :issues.data
+             :issues.tags
              [:issues.annotation :issue_annotation]
              :issues.is_context
              :issues.inserted_at
