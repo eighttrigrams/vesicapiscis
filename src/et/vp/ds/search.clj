@@ -87,10 +87,6 @@
     (->> (do-fetch-issues db opts search-mode)
          (map post-process))))
 
-;; TODO make many callers choose to call either search-related-items or search-items instead
-(defn search-issues-deprecated [db opts]
-  (search-issues' db opts))
-
 (defn search-related-items 
   [db 
    q 
