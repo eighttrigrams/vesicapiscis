@@ -28,9 +28,9 @@
                                            :show-badge? true}]
                                       ) (jdbc/execute! db
                                                       (sql/format {:select [:issues.id :title :short_title]
-                                                                   :from   [:collections]
-                                                                   :join   [:issues [:= :collections.container_id :issues.id]]
-                                                                   :where  [:= :collections.item_id [:inline item-id]]})
+                                                                   :from   [:relations]
+                                                                   :join   [:issues [:= :relations.container_id :issues.id]]
+                                                                   :where  [:= :relations.item_id [:inline item-id]]})
                                                       {:return-keys true})))
                          item-id)]
     (log/info (str "item-id: " item-id ". contexts: " contexts "."))
@@ -80,10 +80,10 @@
 
 (defn update-collection-title-in-collection-items-for-children 
   [db id title short_title]
-  (let [item-ids (doall (map :collections/item_id
+  (let [item-ids (doall (map :relations/item_id
                              (jdbc/execute! db
                                             (sql/format {:select [:item_id]
-                                                         :from   [:collections]
+                                                         :from   [:relations]
                                                          :where  [:= :container_id [:inline id]]})
                                             {:return-keys true})))]
     (doall (for [item-id item-ids]
@@ -92,10 +92,10 @@
 (defn- set-containers-of-item!
   [db item containers]
   (log/info (str "datastore.relations/set-containers-of-item! " (:id item) "." (:title item) "..." containers))
-  (jdbc/execute! db (sql/format {:delete-from [:collections]
+  (jdbc/execute! db (sql/format {:delete-from [:relations]
                                  :where [:= :item_id [:inline (:id item)]]}))
   (doall (for [[container-id {:keys [show-badge? annotation]}] containers]
-           (jdbc/execute! db (sql/format {:insert-into [:collections]
+           (jdbc/execute! db (sql/format {:insert-into [:relations]
                                           :columns [:item_id :container_id :annotation :show_badge]
                                           :values [[[:inline (:id item)]
                                                     [:inline container-id]

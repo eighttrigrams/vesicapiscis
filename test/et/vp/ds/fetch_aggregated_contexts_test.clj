@@ -10,7 +10,7 @@
 (defonce db (edn/read-string (slurp "./test_config.edn")))
 
 (defn reset-db []
-  (jdbc/execute-one! db ["delete from collections"])
+  (jdbc/execute-one! db ["delete from relations"])
   (jdbc/execute-one! db ["delete from issues"]))
 
 (def time-fn 

@@ -20,9 +20,9 @@
                                  :where [:= :id [:inline issue-id]]})))
 
 (defn- update-contexts [item]
-  (let [m (if (:collections_id item)
-            (zipmap (.getArray (:collections_id item))
-                    (.getArray (:collections_annotation item)))
+  (let [m (if (:relations_id item)
+            (zipmap (.getArray (:relations_id item))
+                    (.getArray (:relations_annotation item)))
             {})]
     (->
      item
@@ -38,7 +38,7 @@
                                      :annotation nil
                                      :show-badge? true})]))
                              contexts))))
-     (dissoc :collections_id :collections_annotation))))
+     (dissoc :relations_id :relations_annotation))))
 
 (comment
   (update-contexts {:data {:contexts {"123" "Name"
@@ -70,14 +70,14 @@
 (defn get-contained-items-count [db id]
   (count (jdbc/execute! db
                         (sql/format {:select :*
-                                     :from   [:collections]
+                                     :from   [:relations]
                                      :where  [:= :container_id id]})
                         {:return-keys true})))
 
 (defn delete-item
   [db {:keys [id]}]
   (delete-date db id)
-  (jdbc/execute! db (sql/format {:delete-from [:collections]
+  (jdbc/execute! db (sql/format {:delete-from [:relations]
                                  :where [:= :item_id [:inline id]]}))
   (jdbc/execute! db (sql/format {:delete-from [:issues]
                                  :where [:= :id [:inline id]]})))
@@ -86,10 +86,10 @@
 
 (defn- basic-issues-query [id]
   {:select   [:issues.*
-              [[:array_agg :collections.container_id] :collections_id]
-              [[:array_agg :collections.annotation] :collections_annotation]]
+              [[:array_agg :relations.container_id] :relations_id]
+              [[:array_agg :relations.annotation] :relations_annotation]]
    :from     [:issues]
-   :join     [:collections [:= :issues.id :collections.item_id]]
+   :join     [:relations [:= :issues.id :relations.item_id]]
    :where    [:= :issues.id [:inline id]]
    :group-by [:issues.id]
    :order-by [[:issues.updated_at :desc]]})
@@ -308,7 +308,7 @@
 
 (defn- insert-issue-relations! [db values]
   (jdbc/execute! db
-                 (sql/format {:insert-into [:collections]
+                 (sql/format {:insert-into [:relations]
                               :columns     [:container_id :item_id]
                               :values      values})))
 

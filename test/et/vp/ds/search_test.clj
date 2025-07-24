@@ -10,7 +10,7 @@
 (defonce db (edn/read-string (slurp "./test_config.edn")))
 
 (defn reset-db []
-  (jdbc/execute-one! db ["delete from collections"])
+  (jdbc/execute-one! db ["delete from relations"])
   (jdbc/execute-one! db ["delete from issues"]))
 
 (def time-fn 
@@ -330,7 +330,7 @@
   (let [context-1 (new-context db {:title "Main Context" :short-title "main"})
         context-2 (new-context db {:title "Related Context" :short-title "related"})
         context-3 (new-context db {:title "Other Context" :short-title "other"})
-        ;; Create an issue with relationships to contexts via collections table
+        ;; Create an issue with relationships to contexts via relations table
         issue-1 (new-item db {:title "Test Issue" 
                               :short-title "test"
                               :context-ids-set #{(:id context-1) (:id context-2)}})]
@@ -339,7 +339,7 @@
 (deftest search-contexts-link-context
   (test-with-reset-db-and-time "search-contexts with link-context"
     (let [[_context-1 _context-2 _context-3 issue-1] (create-contexts-for-link-test)
-          ;; Test with selected-context that has issue relationships via collections table
+          ;; Test with selected-context that has issue relationships via relations table
           ;; context-1 and context-2 both contain the same issue, so context-2 should be excluded
           results-with-context (items-q-all
                                 "" 
