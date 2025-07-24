@@ -153,7 +153,7 @@
 ;; instead of after the fact clojure filtering).
 ;;
 ;; TODO write tests, then replace with sql based impl
-(defn fetch-aggregated-contexts'
+(defn get-aggregated-contexts
   [db issues highlighted-secondary-contexts]
   (->> issues
        (map #(get-in % [:data :contexts]))
@@ -166,15 +166,3 @@
        reverse
        (map (fn [[count [id title]]] [id [title count]]))
        (sort-secondary-contexts db highlighted-secondary-contexts)))
-
-;; TODO this should probably go to repository.clj
-(defn fetch-aggregated-contexts 
-  [db {{{:keys [highlighted-secondary-contexts]} :data} :selected-context
-       :as opts}]
-  (let [issues (search-related-items
-                 db 
-                 "" 
-                 (:id (:selected-context opts))
-                 {}
-                 {})]
-    (fetch-aggregated-contexts' db issues highlighted-secondary-contexts)))

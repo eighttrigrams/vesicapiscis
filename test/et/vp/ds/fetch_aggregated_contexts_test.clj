@@ -56,7 +56,7 @@
                   {:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true}
                                      (:id context-3) {:title "Context 3" :show-badge? false}}}}
                   {:data {:contexts {(:id context-2) {:title "Context 2" :show-badge? true}}}}]
-          result (search/fetch-aggregated-contexts' db issues [])]
+          result (search/get-aggregated-contexts db issues [])]
       ;; Should aggregate contexts and count their occurrences
       ;; Context 1 appears 2 times (show-badge? true in both)
       ;; Context 2 appears 2 times (show-badge? true in both)
@@ -71,6 +71,6 @@
 
 (deftest fetch-aggregated-contexts-prime-empty-issues
   (test-with-reset-db-and-time "fetch-aggregated-contexts' with empty issues"
-    (let [result (search/fetch-aggregated-contexts' db [] [])]
+    (let [result (search/get-aggregated-contexts db [] [])]
       ;; Should return empty result for empty issues
       (is (= 0 (count result))))))
