@@ -161,14 +161,14 @@
                               :context-ids-set #{(:id item-1)}})]
     [item-1 item-2]))
 
-(deftest link-issue
+(deftest link-item
   (test-with-reset-db-and-time
-   "link-issue"
+   "link-item"
    (let [[item-1 item-2] (create-items-for-link-item-test)]
-     (is (= ["title-2"] (items-q-titles "" {:link-issue true 
+     (is (= ["title-2"] (items-q-titles "" {:link-item true 
                                             :selected-context-id (:id item-1)
                                             :all-items? true})))
-     (is (= ["title-4" "title-1"] (items-q-titles "" {:link-issue true
+     (is (= ["title-4" "title-1"] (items-q-titles "" {:link-item true
                                                       :selected-context-id (:id item-2)
                                                       :all-items? true}))))))
 

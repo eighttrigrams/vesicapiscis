@@ -46,11 +46,11 @@
 
 (defn search-items
   [q 
-   {:keys [selected-context-id all-items? link-context link-issue] :as _opts}
+   {:keys [selected-context-id all-items? link-context link-item] :as _opts}
    {:keys [limit] :as _ctx}]
-  (let [exclusion-clause (when (or link-context link-issue)
+  (let [exclusion-clause (when (or link-context link-item)
                            (exclusion-clause selected-context-id
-                                             (if link-issue
+                                             (if link-item
                                                :items
                                                :contexts)))]
     (sql/format  

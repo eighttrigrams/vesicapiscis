@@ -32,14 +32,14 @@
 (defn search-items
   [db 
    q 
-   {:keys [all-items? link-context link-issue] :as opts}
+   {:keys [all-items? link-context link-item] :as opts}
    ctx]
   (when (:selected-context opts) 
     (throw (IllegalArgumentException. "Didn't expect 'selected-context' here. Did you mean to pass 'selected-context-id'?")))
   (when (and link-context all-items?)
     (throw (IllegalArgumentException. "Can't combine 'all-items?' and 'link-context'")))
-  (when (and link-issue (not all-items?))
-    (throw (IllegalArgumentException. "Must set 'all-items?' on 'link-issue'")))
+  (when (and link-item (not all-items?))
+    (throw (IllegalArgumentException. "Must set 'all-items?' on 'link-item'")))
   (try
     (->>
      (core/search-items q opts ctx)
@@ -79,9 +79,9 @@
   [db 
    q 
    selected-context-id 
-   {:keys [link-issue search-mode] :as opts}
+   {:keys [link-item search-mode] :as opts}
    {:keys [limit] :as ctx}]
-  (when link-issue (throw (IllegalArgumentException. "'link-issue' shouldn't be supplied here any longer")))
+  (when link-item (throw (IllegalArgumentException. "'link-item' shouldn't be supplied here any longer")))
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)
         items (do-query db 
