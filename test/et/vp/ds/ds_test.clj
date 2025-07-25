@@ -118,7 +118,7 @@
         (let [updated-item1 (ds/get-item db {:id (:id item1)})]
           (is (not (contains? (get-in updated-item1 [:data :contexts]) (:id item2))))
           ;; Verify original context is still there
-          (is (contains? (get-in updated-item1 [:data :contexts]) context-id))))))
+          (is (contains? (get-in updated-item1 [:data :contexts]) context-id)))))))
   
   (test-with-reset-db-and-time "fails to unlink when item would have no containers and is not a context"
     ;; Create a regular item with only one container
@@ -131,7 +131,7 @@
         (is (= false result))
         ;; Verify context is still there
         (let [unchanged-item1 (ds/get-item db {:id (:id item1)})]
-          (is (contains? (get-in unchanged-item1 [:data :contexts]) context-id)))))))
+          (is (contains? (get-in unchanged-item1 [:data :contexts]) context-id))))))
   
   (test-with-reset-db-and-time "allows unlinking when item is a context"
     ;; Create a context and make it a container for itself (edge case)
@@ -153,3 +153,53 @@
         ;; Verify context2 is no longer in context1's contexts
         (let [updated-context1 (ds/get-item db {:id context1-id})]
           (is (not (contains? (get-in updated-context1 [:data :contexts]) context2-id)))))))
+
+(deftest switch-between-issue-and-context-test
+  (test-with-reset-db-and-time "switches regular item to context"
+    ;; Create a regular item (not a context)
+    (let [context (ds/new-context db {:title "Initial Context"})
+          context-id (:id context)
+          item (ds/new-item db "Regular Item" "regular" #{context-id} 1)]
+      ;; Verify it's not a context initially
+      (is (= false (:is_context item)))
+      ;; Switch it to a context
+      (let [switched-item (ds/switch-between-issue-and-context! db item)]
+        ;; Verify it's now a context
+        (is (= true (:is_context switched-item)))
+        ;; Verify database was updated
+        (let [retrieved-item (ds/get-item db {:id (:id item)})]
+          (is (= true (:is_context retrieved-item)))))))
+  
+  (test-with-reset-db-and-time "switches context to regular item when it has associated contexts"
+    ;; Create a context
+    (let [context1 (ds/new-context db {:title "Context 1"})
+          context2 (ds/new-context db {:title "Context 2"})
+          context1-id (:id context1)
+          context2-id (:id context2)]
+      ;; Link context1 to context2 (give context1 some associated contexts)
+      (relations/link-item-to-another-item! db context1 context2 true)
+      ;; Verify context1 is a context and has associated contexts
+      (let [linked-context1 (ds/get-item db {:id context1-id})]
+        (is (= true (:is_context linked-context1)))
+        (is (seq (get-in linked-context1 [:data :contexts])))
+        ;; Switch it to a regular item
+        (let [switched-item (ds/switch-between-issue-and-context! db linked-context1)]
+          ;; Verify it's now a regular item
+          (is (= false (:is_context switched-item)))
+          ;; Verify database was updated
+          (let [retrieved-item (ds/get-item db {:id context1-id})]
+            (is (= false (:is_context retrieved-item))))))))
+  
+  (test-with-reset-db-and-time "prevents switching context to regular item when it has no associated contexts"
+    ;; Create a standalone context with no associated contexts
+    (let [context (ds/new-context db {:title "Standalone Context"})]
+      ;; Verify it's a context and has no associated contexts
+      (is (= true (:is_context context)))
+      (is (empty? (get-in context [:data :contexts] {})))
+      ;; Try to switch it to a regular item - should fail silently
+      (let [result (ds/switch-between-issue-and-context! db context)]
+        ;; Should remain a context (no change)
+        (is (= true (:is_context result)))
+        ;; Verify database was not updated
+        (let [retrieved-item (ds/get-item db {:id (:id context)})]
+          (is (= true (:is_context retrieved-item))))))))
