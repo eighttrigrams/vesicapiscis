@@ -319,7 +319,7 @@
    context-ids-set
    sort-idx]
   (when-not (seq context-ids-set) 
-    (throw (Exception. "won't create a new-issue when no contexts")))
+    (throw (Exception. "won't create a new-item when no contexts")))
   (let [item-id (create-new-item! db title short-title sort-idx)
         values   (vec (doall
                        (map (fn [ctx-id]
