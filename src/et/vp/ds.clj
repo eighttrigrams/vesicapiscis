@@ -56,13 +56,24 @@
     (if (or
            (not is_context) 
            (seq contexts))
-      (jdbc/execute-one! db
-                         (sql/format {:update [:issues]
-                                      :where  [:= :id [:inline id]]
-                                      :set    {:is_context (not is_context)
-                                               :updated_at_ctx [:raw "NOW()"]
-                                               :updated_at  [:raw "NOW()"]}})
-                         {:return-keys true})
+      (do
+        ;; Update the item's is_context status
+        (jdbc/execute-one! db
+                           (sql/format {:update [:issues]
+                                        :where  [:= :id [:inline id]]
+                                        :set    {:is_context (not is_context)
+                                                 :updated_at_ctx [:raw "NOW()"]
+                                                 :updated_at  [:raw "NOW()"]}})
+                           {:return-keys true})
+        ;; Update all items that have this item in their contexts
+        (let [related-items (jdbc/execute! db
+                                           (sql/format {:select [:item_id]
+                                                        :from   [:relations]
+                                                        :where  [:= :container_id [:inline id]]})
+                                           {:return-keys true})]
+          (doseq [{:relations/keys [item_id]} related-items]
+            (datastore.relations/update-collection-title-in-collection-items
+             db item_id id {:is-context? (not is_context)}))))
       (log/info {:has-contexts? (seq contexts)
                  :is-context? is_context} "can't flip context"))
     (get-item db item)))

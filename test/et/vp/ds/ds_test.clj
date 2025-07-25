@@ -155,40 +155,51 @@
           (is (not (contains? (get-in updated-context1 [:data :contexts]) context2-id)))))))
 
 (deftest switch-between-issue-and-context-test
-  (test-with-reset-db-and-time "switches regular item to context"
-    ;; Create a regular item (not a context)
+  (test-with-reset-db-and-time "switches regular item to context and updates related items"
+    ;; Create a regular item and another item that relates to it
     (let [context (ds/new-context db {:title "Initial Context"})
           context-id (:id context)
-          item (ds/new-item db "Regular Item" "regular" #{context-id} 1)]
-      ;; Verify it's not a context initially
+          item (ds/new-item db "Regular Item" "regular" #{context-id} 1)
+          related-item (ds/new-item db "Related Item" "related" #{context-id} 2)]
+      ;; Link the related item to the regular item
+      (relations/link-item-to-another-item! db related-item item true)
+      ;; Verify initial states
       (is (= false (:is_context item)))
-      ;; Switch it to a context
+      (let [initial-related (ds/get-item db {:id (:id related-item)})]
+        ;; Verify the related item shows the regular item as :is-context? false
+        (is (= false (get-in initial-related [:data :contexts (:id item) :is-context?]))))
+      ;; Switch the regular item to a context
       (let [switched-item (ds/switch-between-issue-and-context! db item)]
         ;; Verify it's now a context
         (is (= true (:is_context switched-item)))
-        ;; Verify database was updated
-        (let [retrieved-item (ds/get-item db {:id (:id item)})]
-          (is (= true (:is_context retrieved-item)))))))
+        ;; Verify the related item now shows it as :is-context? true
+        (let [updated-related (ds/get-item db {:id (:id related-item)})]
+          (is (= true (get-in updated-related [:data :contexts (:id item) :is-context?])))))))
   
-  (test-with-reset-db-and-time "switches context to regular item when it has associated contexts"
-    ;; Create a context
+  (test-with-reset-db-and-time "switches context to regular item when it has associated contexts and updates related items"
+    ;; Create a context and items that relate to it
     (let [context1 (ds/new-context db {:title "Context 1"})
           context2 (ds/new-context db {:title "Context 2"})
           context1-id (:id context1)
-          context2-id (:id context2)]
+          related-item (ds/new-item db "Related Item" "related" #{context1-id} 1)]
       ;; Link context1 to context2 (give context1 some associated contexts)
       (relations/link-item-to-another-item! db context1 context2 true)
-      ;; Verify context1 is a context and has associated contexts
+      ;; Link the related item to context1
+      (relations/link-item-to-another-item! db related-item context1 true)
+      ;; Verify initial states
       (let [linked-context1 (ds/get-item db {:id context1-id})]
         (is (= true (:is_context linked-context1)))
-        (is (seq (get-in linked-context1 [:data :contexts])))
-        ;; Switch it to a regular item
-        (let [switched-item (ds/switch-between-issue-and-context! db linked-context1)]
-          ;; Verify it's now a regular item
-          (is (= false (:is_context switched-item)))
-          ;; Verify database was updated
-          (let [retrieved-item (ds/get-item db {:id context1-id})]
-            (is (= false (:is_context retrieved-item))))))))
+        (is (seq (get-in linked-context1 [:data :contexts]))))
+      (let [initial-related (ds/get-item db {:id (:id related-item)})]
+        ;; Verify the related item shows context1 as :is-context? true
+        (is (= true (get-in initial-related [:data :contexts context1-id :is-context?]))))
+      ;; Switch context1 to a regular item
+      (let [switched-item (ds/switch-between-issue-and-context! db (ds/get-item db {:id context1-id}))]
+        ;; Verify it's now a regular item
+        (is (= false (:is_context switched-item)))
+        ;; Verify the related item now shows it as :is-context? false
+        (let [updated-related (ds/get-item db {:id (:id related-item)})]
+          (is (= false (get-in updated-related [:data :contexts context1-id :is-context?])))))))
   
   (test-with-reset-db-and-time "prevents switching context to regular item when it has no associated contexts"
     ;; Create a standalone context with no associated contexts
@@ -202,4 +213,28 @@
         (is (= true (:is_context result)))
         ;; Verify database was not updated
         (let [retrieved-item (ds/get-item db {:id (:id context)})]
-          (is (= true (:is_context retrieved-item))))))))
+          (is (= true (:is_context retrieved-item)))))))
+  
+  (test-with-reset-db-and-time "updates multiple related items when switching context status"
+    ;; Create one item and multiple items that relate to it
+    (let [context (ds/new-context db {:title "Initial Context"})
+          context-id (:id context)
+          target-item (ds/new-item db "Target Item" "target" #{context-id} 1)
+          related-item1 (ds/new-item db "Related Item 1" "rel1" #{context-id} 2)
+          related-item2 (ds/new-item db "Related Item 2" "rel2" #{context-id} 3)
+          related-item3 (ds/new-item db "Related Item 3" "rel3" #{context-id} 4)]
+      ;; Link all related items to the target item
+      (relations/link-item-to-another-item! db related-item1 target-item true)
+      (relations/link-item-to-another-item! db related-item2 target-item true)
+      (relations/link-item-to-another-item! db related-item3 target-item true)
+      ;; Verify initial state - target item is not a context
+      (is (= false (:is_context target-item)))
+      ;; Switch target item to context
+      (ds/switch-between-issue-and-context! db target-item)
+      ;; Verify all related items now show target item as :is-context? true
+      (let [updated-rel1 (ds/get-item db {:id (:id related-item1)})
+            updated-rel2 (ds/get-item db {:id (:id related-item2)})
+            updated-rel3 (ds/get-item db {:id (:id related-item3)})]
+        (is (= true (get-in updated-rel1 [:data :contexts (:id target-item) :is-context?])))
+        (is (= true (get-in updated-rel2 [:data :contexts (:id target-item) :is-context?])))
+        (is (= true (get-in updated-rel3 [:data :contexts (:id target-item) :is-context?])))))))
