@@ -276,9 +276,9 @@
                                  :set {:updated_at [:raw "NOW()"]}
                                  :where [:= :id [:inline id]]})))
 
-(defn- create-new-issue! 
+(defn- create-new-item! 
   ([db title short_title]
-   (create-new-issue! db title short_title nil))
+   (create-new-item! db title short_title nil))
   ([db title short_title sort_idx]
    (let [now (helpers/gen-date)
          id (:issues/id (jdbc/execute-one!
@@ -312,7 +312,7 @@
                               :columns     [:container_id :item_id]
                               :values      values})))
 
-(defn new-issue
+(defn new-item
   [db 
    title
    short-title
@@ -320,14 +320,15 @@
    sort-idx]
   (when-not (seq context-ids-set) 
     (throw (Exception. "won't create a new-issue when no contexts")))
-  (let [issue-id (create-new-issue! db title short-title sort-idx)
+  (let [item-id (create-new-item! db title short-title sort-idx)
         values   (vec (doall
                        (map (fn [ctx-id]
                               [[:inline ctx-id]
-                               [:inline issue-id]])
+                               [:inline item-id]])
                             context-ids-set)))]
     (insert-issue-relations! db values)
-    (get-item db {:id issue-id})))
+    (datastore.relations/set-collection-titles-of-new-issue db item-id)
+    (get-item db {:id item-id})))
 
 (defn new-context [db {title :title}]
   (let [now (helpers/gen-date)]

@@ -81,7 +81,7 @@
        :as opts}]
   (let [item
         (if context-ids-set
-          (ds/new-issue db title short-title context-ids-set sort-idx)
+          (ds/new-item db title short-title context-ids-set sort-idx)
           (let [new-context (ds/new-context db opts)]
             (when short-title
               (ds/update-item db (assoc new-context :short_title short-title)))))]
@@ -239,7 +239,7 @@
 (defn- new-item'
   [db {:keys [title short-title context-ids-set sort-idx]
        :or {sort-idx 0}}]
-  (ds/new-issue db title short-title context-ids-set sort-idx))
+  (ds/new-item db title short-title context-ids-set sort-idx))
 
 (defn- create-contexts []
   (let [context-1 (new-context db {:title "Context One" :short-title "ctx1"})
