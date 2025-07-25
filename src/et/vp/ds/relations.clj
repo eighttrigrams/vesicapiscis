@@ -21,13 +21,14 @@
                data
                (assoc data "contexts" {}))
         contexts (dissoc (into {}
-                               (map (fn [{:issues/keys [id title short_title]}]
+                               (map (fn [{:issues/keys [id title short_title is_context]}]
                                       [id {:title (if (seq short_title)
                                             short_title
                                             title)
-                                           :show-badge? true}]
+                                           :show-badge? true
+                                           :is-context? (boolean is_context)}]
                                       ) (jdbc/execute! db
-                                                      (sql/format {:select [:issues.id :title :short_title]
+                                                      (sql/format {:select [:issues.id :title :short_title :is_context]
                                                                    :from   [:relations]
                                                                    :join   [:issues [:= :relations.container_id :issues.id]]
                                                                    :where  [:= :relations.item_id [:inline item-id]]})
