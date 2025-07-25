@@ -246,10 +246,10 @@
         context-2 (new-context db {:title "Context Two" :short-title "ctx2"})  
         context-3 (new-context db {:title "Another Context" :short-title "ctx3"})
         ;; Create some items to link to contexts
-        _item-1 (new-item' db {:title "Issue 1" 
+        _item-1 (new-item' db {:title "Item 1" 
                                :short-title "iss1"
                                :context-ids-set #{(:id context-1)}})
-        _item-2 (new-item' db {:title "Issue 2"
+        _item-2 (new-item' db {:title "Item 2"
                                :short-title "iss2" 
                                :context-ids-set #{(:id context-2) (:id context-3)}})]
     [context-1 context-2 context-3]))
@@ -339,7 +339,7 @@
 (deftest search-contexts-link-context
   (test-with-reset-db-and-time "search-contexts with link-context"
     (let [[_context-1 _context-2 _context-3 item-1] (create-contexts-for-link-test)
-          ;; Test with selected-context that has issue relationships via relations table
+          ;; Test with selected-context that has items relationships via relations table
           ;; context-1 and context-2 both contain the same item, so context-2 should be excluded
           results-with-context (items-q-all
                                 "" 

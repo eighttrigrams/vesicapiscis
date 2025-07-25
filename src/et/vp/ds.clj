@@ -8,16 +8,16 @@
              :refer [un-namespace-keys post-process-base]
              :as helpers]))
 
-(defn delete-date [db issue-id]
+(defn delete-date [db item-id]
   (jdbc/execute! db
                  (sql/format {:update [:items]
                        :set    {:date nil}
-                       :where [:= :id [:inline issue-id]]})))
+                       :where [:= :id [:inline item-id]]})))
 
-(defn insert-date [db issue-id date]
+(defn insert-date [db item-id date]
   (jdbc/execute! db (sql/format {:update [:items]
                                  :set    {:date [:inline date]}
-                                 :where [:= :id [:inline issue-id]]})))
+                                 :where [:= :id [:inline item-id]]})))
 
 (defn- update-contexts [item]
   (let [m (if (:relations_id item)
