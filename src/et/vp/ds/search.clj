@@ -34,8 +34,8 @@
    q 
    {:keys [all-items? link-context link-item] :as opts}
    ctx]
-  (when (:selected-context opts) 
-    (throw (IllegalArgumentException. "Didn't expect 'selected-context' here. Did you mean to pass 'selected-context-id'?")))
+  (when (:selected-item opts) 
+    (throw (IllegalArgumentException. "Didn't expect 'selected-item' here. Did you mean to pass 'selected-item-id'?")))
   (when (and link-context all-items?)
     (throw (IllegalArgumentException. "Can't combine 'all-items?' and 'link-context'")))
   (when (and link-item (not all-items?))
@@ -78,16 +78,16 @@
 (defn search-related-items
   [db 
    q 
-   selected-context-id 
+   selected-item-id 
    {:keys [link-item search-mode] :as opts}
    {:keys [limit] :as ctx}]
   (when link-item (throw (IllegalArgumentException. "'link-item' shouldn't be supplied here any longer")))
-  (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
+  (when-not selected-item-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)
         items (do-query db 
                          (core/search-related-items
                           q
-                          {:selected-context-id selected-context-id
+                          {:selected-item-id selected-item-id
                            :search-mode         search-mode
                            :unassigned-mode?    (:secondary-contexts-unassigned-selected opts)
                            :join-ids            (join-ids opts)

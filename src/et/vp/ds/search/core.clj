@@ -16,15 +16,15 @@
              :items.updated_at
              :items.date])
 
-(defn exclusion-clause [selected-context-id mode]
+(defn exclusion-clause [selected-item-id mode]
   [:not [:in :items.id 
          (if (= :items mode)
            {:select :relations.target_id
             :from   :relations
-            :where  [:= :relations.owner_id [:inline selected-context-id]]}
+            :where  [:= :relations.owner_id [:inline selected-item-id]]}
            {:select :relations.owner_id
             :from   :relations
-            :where  [:= :relations.target_id selected-context-id]})]])
+            :where  [:= :relations.target_id selected-item-id]})]])
 
 (defn- remove-some-chars [q]
   (-> q
@@ -46,10 +46,10 @@
 
 (defn search-items
   [q 
-   {:keys [selected-context-id all-items? link-context link-item] :as _opts}
+   {:keys [selected-item-id all-items? link-context link-item] :as _opts}
    {:keys [limit] :as _ctx}]
   (let [exclusion-clause (when (or link-context link-item)
-                           (exclusion-clause selected-context-id
+                           (exclusion-clause selected-item-id
                                              (if link-item
                                                :items
                                                :contexts)))]
@@ -59,8 +59,8 @@
              :where    [:and
                         (get-search-clause q)
                         (when-not all-items? [:= :items.is_context true])
-                        (when selected-context-id [:not [:= :items.id selected-context-id]])
-                        (when selected-context-id exclusion-clause)]
+                        (when selected-item-id [:not [:= :items.id selected-item-id]])
+                        (when selected-item-id exclusion-clause)]
              :order-by [[(if all-items? 
                            :items.updated_at
                            :items.updated_at_ctx) :desc]]}
@@ -122,7 +122,7 @@
 
 (defn search-related-items
   [q 
-   {:keys [selected-context-id
+   {:keys [selected-item-id
            join-ids
            search-mode
            unassigned-mode?
@@ -141,7 +141,7 @@
                        (and-query join-ids unassigned-mode? inverted-mode?)))
                    (get-search-clause q)
                    (get-events-exist-clause search-mode)
-                   [:= :relations.owner_id [:raw selected-context-id]]
+                   [:= :relations.owner_id [:raw selected-item-id]]
                    (when (or (= 2 search-mode) (= 3 search-mode))
                      [:> :sort_idx 0])]}
          {:order-by (order-by search-mode)}

@@ -240,23 +240,23 @@
                      {:return-keys true})
   (get-item db {:id id}))
 
-(defn store-current-view [db {:keys [id] :as selected-context} {:keys [title]}]
-  (let [data (:data (get-item db selected-context))
+(defn store-current-view [db {:keys [id] :as selected-item} {:keys [title]}]
+  (let [data (:data (get-item db selected-item))
         data (update-in data [:views :stored] conj {:title title
                                                     :view (:current (:views data))})]
     (jdbc/execute-one! db (sql/format {:update [:items]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]}))) 
-  (get-item db selected-context))
+  (get-item db selected-item))
 
-(defn load-stored-context [db {:keys [id] :as selected-context} idx]
-  (let [data (:data (get-item db selected-context))
+(defn load-stored-context [db {:keys [id] :as selected-item} idx]
+  (let [data (:data (get-item db selected-item))
         data (assoc-in data [:views :current] 
                        (-> data :views :stored (get idx) :view))]
     (jdbc/execute-one! db (sql/format {:update [:items]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]})))
-  (get-item db selected-context))
+  (get-item db selected-item))
 
 ;; https://stackoverflow.com/a/18319708
 (defn vec-remove
@@ -264,13 +264,13 @@
   [pos coll]
   (into (subvec coll 0 pos) (subvec coll (inc pos))))
 
-(defn remove-stored-context [db {:keys [id] :as selected-context} idx]
-  (let [data (:data (get-item db selected-context))
+(defn remove-stored-context [db {:keys [id] :as selected-item} idx]
+  (let [data (:data (get-item db selected-item))
         data (update-in data [:views :stored] #(vec-remove idx %))]
     (jdbc/execute-one! db (sql/format {:update [:items]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]})))
-  (get-item db selected-context))
+  (get-item db selected-item))
 
 (defn cycle-search-mode [db {:keys [id] :as context}]
   (let [data (-> (get-item db context)

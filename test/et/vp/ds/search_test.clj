@@ -36,7 +36,7 @@
        ~@body)))
 
 (defn- related-items-q-all 
-  [selected-context {:keys [q search-mode] :as opts}]
+  [selected-item {:keys [q search-mode] :as opts}]
   (let [search-mode 
         (case search-mode
           :last-touched-first 1
@@ -46,20 +46,20 @@
           :integer-short-titles-desc 3
           0)
         opts (dissoc (assoc opts :search-mode search-mode) :q)]
-    (search/search-related-items db q (:id selected-context) opts {})))
+    (search/search-related-items db q (:id selected-item) opts {})))
 
-(defn- related-items-q-titles [selected-context opts]
-  (mapv :title (related-items-q-all selected-context opts)))
+(defn- related-items-q-titles [selected-item opts]
+  (mapv :title (related-items-q-all selected-item opts)))
 
 (defn- related-items-q
   "This fn is in place because I may want to do the refactoring where
    the search result isn't any longer just the first item of the vector
    but the only result."
-  ([selected-context] (related-items-q selected-context {}))
-  ([selected-context opts]
+  ([selected-item] (related-items-q selected-item {}))
+  ([selected-item opts]
    (:title 
     (first
-     (related-items-q-all selected-context opts)))))
+     (related-items-q-all selected-item opts)))))
 
 (defn- items-q-all 
   ([q opts]
@@ -166,10 +166,10 @@
    "link-item"
    (let [[item-1 item-2] (create-items-for-link-item-test)]
      (is (= ["title-2"] (items-q-titles "" {:link-item true 
-                                            :selected-context-id (:id item-1)
+                                            :selected-item-id (:id item-1)
                                             :all-items? true})))
      (is (= ["title-4" "title-1"] (items-q-titles "" {:link-item true
-                                                      :selected-context-id (:id item-2)
+                                                      :selected-item-id (:id item-2)
                                                       :all-items? true}))))))
 
 (defn- create-items-for-intersection-tests [{add-one? :add-one?}]
@@ -304,7 +304,7 @@
 (deftest search-contexts-filtering
   (test-with-reset-db-and-time "search-contexts with filtering options"
     (let [[context-1 _context-2 _context-3] (create-contexts)
-          results (items-q-all "" {:selected-context-id (:id context-1)})]
+          results (items-q-all "" {:selected-item-id (:id context-1)})]
       ;; Should exclude the selected context from results
       (is (not (some #(= (:id context-1) (:id %)) results)))
       (is (some #(= "Context Two" (:title %)) results))
@@ -339,12 +339,12 @@
 (deftest search-contexts-link-context
   (test-with-reset-db-and-time "search-contexts with link-context"
     (let [[_context-1 _context-2 _context-3 item-1] (create-contexts-for-link-test)
-          ;; Test with selected-context that has items relationships via relations table
+          ;; Test with selected-item that has items relationships via relations table
           ;; context-1 and context-2 both contain the same item, so context-2 should be excluded
           results-with-context (items-q-all
                                 "" 
                                 {:link-context true
-                                 :selected-context-id (:id item-1)})]
+                                 :selected-item-id (:id item-1)})]
       ;; Should exclude context-1 (selected) and context-2 (shares items with context-1)  
       ;; Should include context-3 (doesn't share items with context-1)
       (is (= 1 (count results-with-context)))
