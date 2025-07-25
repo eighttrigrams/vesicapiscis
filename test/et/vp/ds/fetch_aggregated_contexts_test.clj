@@ -11,7 +11,7 @@
 
 (defn reset-db []
   (jdbc/execute-one! db ["delete from relations"])
-  (jdbc/execute-one! db ["delete from issues"]))
+  (jdbc/execute-one! db ["delete from items"]))
 
 (def time-fn 
   (let [seconds (atom 0)]
@@ -51,12 +51,12 @@
     (let [context-1 (new-context db {:title "Context 1" :short-title "ctx1"})
           context-2 (new-context db {:title "Context 2" :short-title "ctx2"})
           context-3 (new-context db {:title "Context 3" :short-title "ctx3"})
-          issues [{:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true}
+          items [{:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true}
                                      (:id context-2) {:title "Context 2" :show-badge? true}}}}
                   {:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true}
                                      (:id context-3) {:title "Context 3" :show-badge? false}}}}
                   {:data {:contexts {(:id context-2) {:title "Context 2" :show-badge? true}}}}]
-          result (search/get-aggregated-contexts db issues [])]
+          result (search/get-aggregated-contexts db items [])]
       ;; Should aggregate contexts and count their occurrences
       ;; Context 1 appears 2 times (show-badge? true in both)
       ;; Context 2 appears 2 times (show-badge? true in both)
@@ -69,8 +69,8 @@
         ;; Context 3 should not appear (show-badge? false)
         (is (nil? (result-map (:id context-3))))))))
 
-(deftest fetch-aggregated-contexts-prime-empty-issues
-  (test-with-reset-db-and-time "fetch-aggregated-contexts' with empty issues"
+(deftest fetch-aggregated-contexts-prime-empty-items
+  (test-with-reset-db-and-time "fetch-aggregated-contexts' with empty items"
     (let [result (search/get-aggregated-contexts db [] [])]
-      ;; Should return empty result for empty issues
+      ;; Should return empty result for empty items
       (is (= 0 (count result))))))

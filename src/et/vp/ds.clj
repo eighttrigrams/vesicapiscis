@@ -10,12 +10,12 @@
 
 (defn delete-date [db issue-id]
   (jdbc/execute! db
-                 (sql/format {:update [:issues]
+                 (sql/format {:update [:items]
                        :set    {:date nil}
                        :where [:= :id [:inline issue-id]]})))
 
 (defn insert-date [db issue-id date]
-  (jdbc/execute! db (sql/format {:update [:issues]
+  (jdbc/execute! db (sql/format {:update [:items]
                                  :set    {:date [:inline date]}
                                  :where [:= :id [:inline issue-id]]})))
 
@@ -51,8 +51,8 @@
 
 (declare get-item)
 
-(defn switch-between-issue-and-context! [db {:keys [id is_context] :as item}]
-  (log/info {:id id :is_context is_context} "switch-between-issue-and-context!")
+(defn switch-between-item-and-context! [db {:keys [id is_context] :as item}]
+  (log/info {:id id :is_context is_context} "switch-between-item-and-context!")
   (let [contexts (-> item :data :contexts)]
     (if (or
            (not is_context) 
@@ -60,7 +60,7 @@
       (do
         (log/info "Update the item's is_context status")
         (jdbc/execute-one! db
-                           (sql/format {:update [:issues]
+                           (sql/format {:update [:items]
                                         :where  [:= :id [:inline id]]
                                         :set    {:is_context (not is_context)
                                                  :updated_at_ctx [:raw "NOW()"]
@@ -95,66 +95,66 @@
   (delete-date db id)
   (jdbc/execute! db (sql/format {:delete-from [:relations]
                                  :where [:= :target_id [:inline id]]}))
-  (jdbc/execute! db (sql/format {:delete-from [:issues]
+  (jdbc/execute! db (sql/format {:delete-from [:items]
                                  :where [:= :id [:inline id]]})))
 
 (declare get-item)
 
-(defn- basic-issues-query [id]
-  {:select   [:issues.*
+(defn- basic-items-query [id]
+  {:select   [:items.*
               [[:array_agg :relations.owner_id] :relations_id]
               [[:array_agg :relations.annotation] :relations_annotation]]
-   :from     [:issues]
-   :join     [:relations [:= :issues.id :relations.target_id]]
-   :where    [:= :issues.id [:inline id]]
-   :group-by [:issues.id]
-   :order-by [[:issues.updated_at :desc]]})
+   :from     [:items]
+   :join     [:relations [:= :items.id :relations.target_id]]
+   :where    [:= :items.id [:inline id]]
+   :group-by [:items.id]
+   :order-by [[:items.updated_at :desc]]})
 
-(defn- simple-issues-query [id]
-  {:select   [:issues.*]
-   :from     [:issues]
-   :where    [:= :issues.id [:inline id]]
-   :group-by [:issues.id]
-   :order-by [[:issues.updated_at :desc]]})
+(defn- simple-items-query [id]
+  {:select   [:items.*]
+   :from     [:items]
+   :where    [:= :items.id [:inline id]]
+   :group-by [:items.id]
+   :order-by [[:items.updated_at :desc]]})
 
-(defn- get-issue-without-related-issues [db id]
-  (or (-> (basic-issues-query id)
+(defn- get-item-without-related-items [db id]
+  (or (-> (basic-items-query id)
           sql/format
           (#(jdbc/execute-one! db % {:return-keys true})))
-      (-> (simple-issues-query id)
+      (-> (simple-items-query id)
           sql/format
           (#(jdbc/execute-one! db % {:return-keys true})))))
 
 (defn get-item
   [db {:keys [id]}]
-  (-> (get-issue-without-related-issues db id)
+  (-> (get-item-without-related-items db id)
       post-process))
 
 (defn- basic-title-query [title]
-  {:select   [:issues.*]
-   :from     [:issues]
-   :where    [:= :issues.title [:inline title]]
-   :group-by [:issues.id] ;; TODO remove
-   :order-by [[:issues.updated_at :desc]]})
+  {:select   [:items.*]
+   :from     [:items]
+   :where    [:= :items.title [:inline title]]
+   :group-by [:items.id] ;; TODO remove
+   :order-by [[:items.updated_at :desc]]})
 
-(defn- get-issue-without-related-issues-by-title [db id]
+(defn- get-item-without-related-items-by-title [db id]
   (-> (basic-title-query id)
       sql/format
       (#(jdbc/execute-one! db % {:return-keys true}))))
 
 (defn get-item-by-title 
   [db {:keys [title]}]
-  (-> (get-issue-without-related-issues-by-title db title)
+  (-> (get-item-without-related-items-by-title db title)
       post-process
       (assoc :contexts {})
-      (assoc :related_issues {})))
+      (assoc :related_items {})))
 
 (defn- basic-find-query [path match]
-  {:select   [:issues.*]
-   :from     [:issues]
+  {:select   [:items.*]
+   :from     [:items]
    :where    [:= path [:inline match]]})
 
-(defn- get-issue-without-related-issues-by-path [db path url]
+(defn- get-item-without-related-items-by-path [db path url]
   (-> (basic-find-query [:raw path] url)
       sql/format
       (#(jdbc/execute-one! db % {:return-keys true}))))
@@ -162,7 +162,7 @@
 (defn get-item-by-path
   [db path url]
   (try
-    (-> (get-issue-without-related-issues-by-path db path url)
+    (-> (get-item-without-related-items-by-path db path url)
         post-process
         (assoc :contexts {}))
     (catch java.lang.Exception e
@@ -207,7 +207,7 @@
                                                   (:sort_idx old-item)
                                                   -1)))))]}) )
         
-        formatted-sql (sql/format {:update [:issues]
+        formatted-sql (sql/format {:update [:items]
                                    :where  [:= :id [:inline id]]
                                    :set    set})
         _result       (jdbc/execute-one! db
@@ -233,7 +233,7 @@
 
 (defn update-context-description [db {:keys [id description]}]
   (jdbc/execute-one! db
-                     (sql/format {:update [:issues]
+                     (sql/format {:update [:items]
                                   :set    {:description    [:inline description]
                                            :updated_at_ctx [:raw "NOW()"]}
                                   :where  [:= :id [:inline id]]})
@@ -244,7 +244,7 @@
   (let [data (:data (get-item db selected-context))
         data (update-in data [:views :stored] conj {:title title
                                                     :view (:current (:views data))})]
-    (jdbc/execute-one! db (sql/format {:update [:issues]
+    (jdbc/execute-one! db (sql/format {:update [:items]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]}))) 
   (get-item db selected-context))
@@ -253,7 +253,7 @@
   (let [data (:data (get-item db selected-context))
         data (assoc-in data [:views :current] 
                        (-> data :views :stored (get idx) :view))]
-    (jdbc/execute-one! db (sql/format {:update [:issues]
+    (jdbc/execute-one! db (sql/format {:update [:items]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]})))
   (get-item db selected-context))
@@ -267,7 +267,7 @@
 (defn remove-stored-context [db {:keys [id] :as selected-context} idx]
   (let [data (:data (get-item db selected-context))
         data (update-in data [:views :stored] #(vec-remove idx %))]
-    (jdbc/execute-one! db (sql/format {:update [:issues]
+    (jdbc/execute-one! db (sql/format {:update [:items]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]})))
   (get-item db selected-context))
@@ -277,18 +277,18 @@
                  :data
                  (update-in [:views :current :search-mode]
                             #(mod (inc (or % 0)) 6)))]
-    (jdbc/execute-one! db (sql/format {:update [:issues]
+    (jdbc/execute-one! db (sql/format {:update [:items]
                                        :set    {:data [:inline (json/generate-string data)]}
                                        :where  [:= :id [:inline id]]}))
     (get-item db context)))
 
 (defn reprioritize-context [db {:keys [id]}]
-  (jdbc/execute! db (sql/format {:update [:issues]
+  (jdbc/execute! db (sql/format {:update [:items]
                                  :set {:updated_at_ctx [:raw "NOW()"]}
                                  :where [:= :id [:inline id]]})))
 
-(defn reprioritize-issue [db {:keys [id]}]
-  (jdbc/execute! db (sql/format {:update [:issues]
+(defn reprioritize-item [db {:keys [id]}]
+  (jdbc/execute! db (sql/format {:update [:items]
                                  :set {:updated_at [:raw "NOW()"]}
                                  :where [:= :id [:inline id]]})))
 
@@ -297,9 +297,9 @@
    (create-new-item! db title short_title nil))
   ([db title short_title sort_idx]
    (let [now (helpers/gen-date)
-         id (:issues/id (jdbc/execute-one!
+         id (:items/id (jdbc/execute-one!
                   db
-                  (sql/format {:insert-into [:issues]
+                  (sql/format {:insert-into [:items]
                                :columns     (concat [:inserted_at
                                                      :updated_at
                                                      :updated_at_ctx
@@ -322,7 +322,7 @@
        (insert-date db id (helpers/gen-iso-simple-date-str)))
      id)))
 
-(defn- insert-issue-relations! [db values]
+(defn- insert-item-relations! [db values]
   (jdbc/execute! db
                  (sql/format {:insert-into [:relations]
                               :columns     [:owner_id :target_id]
@@ -342,15 +342,15 @@
                               [[:inline ctx-id]
                                [:inline item-id]])
                             context-ids-set)))]
-    (insert-issue-relations! db values)
-    (datastore.relations/set-collection-titles-of-new-issue db item-id)
+    (insert-item-relations! db values)
+    (datastore.relations/set-collection-titles-of-new-item db item-id)
     (get-item db {:id item-id})))
 
 (defn new-context [db {title :title}]
   (let [now (helpers/gen-date)]
     (-> (jdbc/execute-one!
          db
-         (sql/format {:insert-into [:issues]
+         (sql/format {:insert-into [:items]
                       :columns     [:inserted_at
                                     :updated_at
                                     :updated_at_ctx

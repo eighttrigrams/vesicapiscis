@@ -26,7 +26,7 @@
         (is (= (:title item) (:title retrieved-item)))
         (is (= (:short_title item) (:short_title retrieved-item)))
         (is (= (:sort_idx item) (:sort_idx retrieved-item))))
-      ;; Verify collection titles are set (effect of set-collection-titles-of-new-issue call)
+      ;; Verify collection titles are set (effect of set-collection-titles-of-new-item call)
       ;; The item should have context information populated in its data
       (is (map? (get-in item [:data :contexts])))
       (is (contains? (get-in item [:data :contexts]) context-id))
@@ -154,7 +154,7 @@
         (let [updated-context1 (ds/get-item db {:id context1-id})]
           (is (not (contains? (get-in updated-context1 [:data :contexts]) context2-id)))))))
 
-(deftest switch-between-issue-and-context-test
+(deftest switch-between-item-and-context-test
   (test-with-reset-db-and-time "switches regular item to context and updates related items"
     (let [context (ds/new-context db {:title "Initial Context"})
           context-id (:id context)
@@ -170,7 +170,7 @@
         (is (= "regular" (:title initial-related-data))))
 
       ;; Switch the regular item to a context
-      (let [switched-item (ds/switch-between-issue-and-context! db item)]
+      (let [switched-item (ds/switch-between-item-and-context! db item)]
         ;; Verify it's now a context
         (is (= true (:is_context switched-item)))
         ;; Verify the related item now shows it as :is-context? true
@@ -198,7 +198,7 @@
         ;; Verify the related item shows context1 as :is-context? true
         (is (= true (get-in initial-related [:data :contexts context1-id :is-context?]))))
       ;; Switch context1 to a regular item
-      (let [switched-item (ds/switch-between-issue-and-context! db (ds/get-item db {:id context1-id}))]
+      (let [switched-item (ds/switch-between-item-and-context! db (ds/get-item db {:id context1-id}))]
         ;; Verify it's now a regular item
         (is (= false (:is_context switched-item)))
         ;; Verify the related item now shows it as :is-context? false
@@ -212,7 +212,7 @@
       (is (= true (:is_context context)))
       (is (empty? (get-in context [:data :contexts] {})))
       ;; Try to switch it to a regular item - should fail silently
-      (let [result (ds/switch-between-issue-and-context! db context)]
+      (let [result (ds/switch-between-item-and-context! db context)]
         ;; Should remain a context (no change)
         (is (= true (:is_context result)))
         ;; Verify database was not updated
@@ -234,7 +234,7 @@
       ;; Verify initial state - target item is not a context
       (is (= false (:is_context target-item)))
       ;; Switch target item to context
-      (ds/switch-between-issue-and-context! db target-item)
+      (ds/switch-between-item-and-context! db target-item)
       ;; Verify all related items now show target item as :is-context? true
       (let [updated-rel1 (ds/get-item db {:id (:id related-item1)})
             updated-rel2 (ds/get-item db {:id (:id related-item2)})

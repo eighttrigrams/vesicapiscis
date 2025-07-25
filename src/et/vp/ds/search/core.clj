@@ -3,22 +3,22 @@
             [honey.sql :as sql]
             [clojure.string :as str]))
 
-(def select [:issues.title
-             :issues.short_title
-             :issues.sort_idx
-             :issues.id
-             :issues.data
+(def select [:items.title
+             :items.short_title
+             :items.sort_idx
+             :items.id
+             :items.data
              ;; TODO make tags optional; i need it only in tracker-mcp
-             :issues.tags
-             [:issues.annotation :issue_annotation]
-             :issues.is_context
-             :issues.inserted_at
-             :issues.updated_at
-             :issues.date])
+             :items.tags
+             [:items.annotation :item_annotation]
+             :items.is_context
+             :items.inserted_at
+             :items.updated_at
+             :items.date])
 
 (defn exclusion-clause [selected-context-id mode]
-  [:not [:in :issues.id 
-         (if (= :issues mode)
+  [:not [:in :items.id 
+         (if (= :items mode)
            {:select :relations.target_id
             :from   :relations
             :where  [:= :relations.owner_id [:inline selected-context-id]]}
@@ -51,34 +51,34 @@
   (let [exclusion-clause (when (or link-context link-issue)
                            (exclusion-clause selected-context-id
                                              (if link-issue
-                                               :issues
+                                               :items
                                                :contexts)))]
     (sql/format  
      (merge {:select   select
-             :from     [:issues]
+             :from     [:items]
              :where    [:and
                         (get-search-clause q)
-                        (when-not all-items? [:= :issues.is_context true])
-                        (when selected-context-id [:not [:= :issues.id selected-context-id]])
+                        (when-not all-items? [:= :items.is_context true])
+                        (when selected-context-id [:not [:= :items.id selected-context-id]])
                         (when selected-context-id exclusion-clause)]
              :order-by [[(if all-items? 
-                           :issues.updated_at
-                           :issues.updated_at_ctx) :desc]]}
+                           :items.updated_at
+                           :items.updated_at_ctx) :desc]]}
             (when limit {:limit limit})))))
 
 (defn- get-events-exist-clause [search-mode]
   (when (= 4 search-mode)
-    [:<> :issues.date nil]))
+    [:<> :items.date nil]))
 
 (defn- and-query 
   [join-ids unassigned-mode? inverted-mode?]
   (let [r
-        [:in :issues.id
-         (merge {:select   :issues.id
-                 :from     [:issues]
-                 :join     [:relations [:= :issues.id :relations.target_id]]
-                 :group-by :issues.id
-                 :having   [:raw (str "COUNT(issues.id) = " 
+        [:in :items.id
+         (merge {:select   :items.id
+                 :from     [:items]
+                 :join     [:relations [:= :items.id :relations.target_id]]
+                 :group-by :items.id
+                 :having   [:raw (str "COUNT(items.id) = " 
                                       (if unassigned-mode? 1
                                           (count join-ids)))]}
                 (when-not unassigned-mode? {:where [:in :relations.owner_id [:inline join-ids]]}))]]
@@ -87,36 +87,36 @@
       r)))
 
 (defn- or-partial [join-ids]
-  {:select :issues.id
-   :from   [:issues]
-   :join   [:relations [:= :issues.id :relations.target_id]]
+  {:select :items.id
+   :from   [:items]
+   :join   [:relations [:= :items.id :relations.target_id]]
    :where  [:in :relations.owner_id [:inline join-ids]]})
 
 (defn- or-query 
   [join-ids unassigned-mode?]
   (if unassigned-mode?
     [:and
-     [:not [:in :issues.id
+     [:not [:in :items.id
             (or-partial join-ids)]]
-     [:in :issues.id
-      {:select   :issues.id
-       :from     [:issues]
-       :join     [:relations [:= :issues.id :relations.target_id]]
-       :group-by :issues.id
-       :having   [:raw "COUNT(issues.id) > 1"]}]]
-    [:not [:in :issues.id
+     [:in :items.id
+      {:select   :items.id
+       :from     [:items]
+       :join     [:relations [:= :items.id :relations.target_id]]
+       :group-by :items.id
+       :having   [:raw "COUNT(items.id) > 1"]}]]
+    [:not [:in :items.id
            (or-partial join-ids)]]))
 
 (defn- order-by [search-mode]
   [(if (= search-mode 5)
-     [:issues.inserted_at :desc]
+     [:items.inserted_at :desc]
      (if (= search-mode 4)
-       [:issues.date :desc]
+       [:items.date :desc]
        (if (or (= 2 search-mode) (= 3 search-mode))
-         [:issues.sort_idx (if (= 2 search-mode)
+         [:items.sort_idx (if (= 2 search-mode)
                                      :asc
                                      :desc)]
-         [:issues.updated_at (if (= 1 search-mode)  
+         [:items.updated_at (if (= 1 search-mode)  
                                :asc
                                :desc)])))])
 
@@ -133,7 +133,7 @@
   (let [or-mode? (when join-ids inverted-mode?)]
     (-> (merge
          {:select (vec (concat core/select [:relations.annotation]))
-          :from   :issues
+          :from   :items
           :where  [:and
                    (when (or join-ids unassigned-mode?)
                      (if or-mode? 
@@ -146,5 +146,5 @@
                      [:> :sort_idx 0])]}
          {:order-by (order-by search-mode)}
          (when limit {:limit limit})
-         {:join [:relations [:= :issues.id :relations.target_id]]})
+         {:join [:relations [:= :items.id :relations.target_id]]})
         sql/format)))

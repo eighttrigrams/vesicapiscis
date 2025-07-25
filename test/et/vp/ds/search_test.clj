@@ -11,7 +11,7 @@
 
 (defn reset-db []
   (jdbc/execute-one! db ["delete from relations"])
-  (jdbc/execute-one! db ["delete from issues"]))
+  (jdbc/execute-one! db ["delete from items"]))
 
 (def time-fn 
   (let [seconds (atom 0)]
@@ -89,7 +89,7 @@
       (ds/update-item db (assoc item :date date))
       item)))
 
-(defn- create-issues [{:keys [integer-short-titles?]}]
+(defn- create-items [{:keys [integer-short-titles?]}]
   (let [item-1    (new-item db {:title       "title-1" 
                                 :short-title "abc"})
         item-2    (new-item db {:title       "title-2" 
@@ -116,11 +116,11 @@
 
 (deftest search
   (test-with-reset-db-and-time "base case - overview"
-    (create-issues {})
+    (create-items {})
     (is (= "title-2-2" (items-q "" {:all-items? true})))
     (is (= "title-2-1" (items-q "abc" {:all-items? true}))))
   (test-with-reset-db-and-time "in context"
-    (let [[item-1 item-2] (create-issues {})]
+    (let [[item-1 item-2] (create-items {})]
       (is (= "title-1-2" (related-items-q item-1)))
       (is (= "title-1-1" (related-items-q item-1 {:search-mode :last-touched-first})))
       (is (= "title-1-1" (related-items-q item-1 {:q "abc"})))
@@ -131,15 +131,15 @@
 (deftest events
   (test-with-reset-db-and-time 
    "base case - overview"
-   (create-issues {})
+   (create-items {})
    (is (= "title-2-2" (items-q "" {:all-items? true}))))
   (test-with-reset-db-and-time 
    "in context"
-   (let [[_item-1 item-2] (create-issues {})]
+   (let [[_item-1 item-2] (create-items {})]
      (is (= "title-2-2" (related-items-q item-2 {:search-mode :past-events})))))
   (test-with-reset-db-and-time 
    "last added mode"
-   (let [[item-1 item-2] (create-issues {})]
+   (let [[item-1 item-2] (create-items {})]
      (is (= "title-2-2" (items-q "" {:search-mode :last-added :all-items? true})))
      (is (= "title-1-2" (related-items-q item-1 {:search-mode :last-added})))
      (is (= "title-2-2" (related-items-q item-2 {:search-mode :last-added}))))))
@@ -147,11 +147,11 @@
 (deftest sort-modes
   (test-with-reset-db-and-time 
    "sort ascending and descending (only available in context)"
-   (let [[item-1 _item-2] (create-issues {:integer-short-titles? true})]
+   (let [[item-1 _item-2] (create-items {:integer-short-titles? true})]
      (is (= "title-1-2" (related-items-q item-1 {:search-mode :integer-short-titles-asc})))
      (is (= "title-1-1" (related-items-q item-1 {:search-mode :integer-short-titles-desc}))))))
 
-(defn- create-issues-for-link-issue-test []
+(defn- create-items-for-link-item-test []
   (let [item-1    (new-item db {:title       "title-1"})
         item-2    (new-item db {:title       "title-2"})
         _item-3 (new-item db {:title           "title-3" 
@@ -164,7 +164,7 @@
 (deftest link-issue
   (test-with-reset-db-and-time
    "link-issue"
-   (let [[item-1 item-2] (create-issues-for-link-issue-test)]
+   (let [[item-1 item-2] (create-items-for-link-item-test)]
      (is (= ["title-2"] (items-q-titles "" {:link-issue true 
                                             :selected-context-id (:id item-1)
                                             :all-items? true})))
@@ -172,7 +172,7 @@
                                                       :selected-context-id (:id item-2)
                                                       :all-items? true}))))))
 
-(defn- create-issues-for-intersection-tests [{add-one? :add-one?}]
+(defn- create-items-for-intersection-tests [{add-one? :add-one?}]
   (let [item-1    (new-item db {:title       "title-1"})
         item-2    (new-item db {:title       "title-2"})
         item-5    (new-item db {:title       "title-5"})
@@ -193,7 +193,7 @@
 
 (deftest intersections
   (test-with-reset-db-and-time "base case - overview"
-    (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
+    (let [[item-1 item-2] (create-items-for-intersection-tests {})]
       (is (= ["title-4" "title-3"] (related-items-q-titles item-1 {}))) ;; sanity check
       (is (= ["title-3"] (related-items-q-titles item-1 {:selected-secondary-contexts (list (:id item-2))})))
       (is (= ["title-4"] (related-items-q-titles item-1 {:secondary-contexts-unassigned-selected true})))
@@ -201,7 +201,7 @@
                                             ;; when contexts list present, the following should have no effect
                                             :secondary-contexts-unassigned-selected true})))))
   (test-with-reset-db-and-time "base case - or"
-    (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
+    (let [[item-1 item-2] (create-items-for-intersection-tests {})]
       (is (= ["title-4"] 
              (related-items-q-titles item-1 {:selected-secondary-contexts (list (:id item-2))
                                :secondary-contexts-inverted true})))
@@ -209,17 +209,17 @@
              (related-items-q-titles item-1 {:selected-secondary-contexts (list (:id item-2) (:id item-1))
                                :secondary-contexts-inverted true})))))
   (test-with-reset-db-and-time "base case - inverted and unassigned at the same time"
-    (let [[item-1 _item-2] (create-issues-for-intersection-tests {})]
+    (let [[item-1 _item-2] (create-items-for-intersection-tests {})]
       (is (= ["title-3"]
              (related-items-q-titles item-1 {:secondary-contexts-inverted            true
                                :secondary-contexts-unassigned-selected true})))))
   (test-with-reset-db-and-time "base case - inverted and unassigned at the same time + secondary selected contexts"
-     (let [[item-1 item-2] (create-issues-for-intersection-tests {})]
+     (let [[item-1 item-2] (create-items-for-intersection-tests {})]
        (is (= []
               (related-items-q-titles item-1 {:secondary-contexts-inverted            true
                                 :secondary-contexts-unassigned-selected true
                                 :selected-secondary-contexts            (list (:id item-2))}))))
-     (let [[item-1 item-2] (create-issues-for-intersection-tests {:add-one? true})]
+     (let [[item-1 item-2] (create-items-for-intersection-tests {:add-one? true})]
        (is (= ["title-6"]
               (related-items-q-titles item-1 {:secondary-contexts-inverted            true
                                 :secondary-contexts-unassigned-selected true
@@ -245,11 +245,11 @@
   (let [context-1 (new-context db {:title "Context One" :short-title "ctx1"})
         context-2 (new-context db {:title "Context Two" :short-title "ctx2"})  
         context-3 (new-context db {:title "Another Context" :short-title "ctx3"})
-        ;; Create some issues to link to contexts
-        _issue-1 (new-item' db {:title "Issue 1" 
+        ;; Create some items to link to contexts
+        _item-1 (new-item' db {:title "Issue 1" 
                                :short-title "iss1"
                                :context-ids-set #{(:id context-1)}})
-        _issue-2 (new-item' db {:title "Issue 2"
+        _item-2 (new-item' db {:title "Issue 2"
                                :short-title "iss2" 
                                :context-ids-set #{(:id context-2) (:id context-3)}})]
     [context-1 context-2 context-3]))
@@ -330,22 +330,22 @@
   (let [context-1 (new-context db {:title "Main Context" :short-title "main"})
         context-2 (new-context db {:title "Related Context" :short-title "related"})
         context-3 (new-context db {:title "Other Context" :short-title "other"})
-        ;; Create an issue with relationships to contexts via relations table
-        issue-1 (new-item db {:title "Test Issue" 
+        ;; Create an item with relationships to contexts via relations table
+        item-1 (new-item db {:title "Test Item" 
                               :short-title "test"
                               :context-ids-set #{(:id context-1) (:id context-2)}})]
-    [context-1 context-2 context-3 issue-1]))
+    [context-1 context-2 context-3 item-1]))
 
 (deftest search-contexts-link-context
   (test-with-reset-db-and-time "search-contexts with link-context"
-    (let [[_context-1 _context-2 _context-3 issue-1] (create-contexts-for-link-test)
+    (let [[_context-1 _context-2 _context-3 item-1] (create-contexts-for-link-test)
           ;; Test with selected-context that has issue relationships via relations table
-          ;; context-1 and context-2 both contain the same issue, so context-2 should be excluded
+          ;; context-1 and context-2 both contain the same item, so context-2 should be excluded
           results-with-context (items-q-all
                                 "" 
                                 {:link-context true
-                                 :selected-context-id (:id issue-1)})]
-      ;; Should exclude context-1 (selected) and context-2 (shares issues with context-1)  
-      ;; Should include context-3 (doesn't share issues with context-1)
+                                 :selected-context-id (:id item-1)})]
+      ;; Should exclude context-1 (selected) and context-2 (shares items with context-1)  
+      ;; Should include context-3 (doesn't share items with context-1)
       (is (= 1 (count results-with-context)))
       (is (= "Other Context" (:title (first results-with-context)))))))

@@ -9,10 +9,10 @@
             [et.vp.ds.search :as search]))
 
 (defn- post-process [result]
-  (let [{:keys [annotation issue_annotation] :as r} (post-process-base result)]
+  (let [{:keys [annotation item_annotation] :as r} (post-process-base result)]
     (cond-> r 
       (empty? annotation)
-      (assoc :annotation issue_annotation))))
+      (assoc :annotation item_annotation))))
 
 (defn- post-process-contexts [item]
   (if (-> item :data :contexts)
@@ -52,9 +52,9 @@
 
 (defn- do-query [db formatted-query]
   #_(prn "???" formatted-query)
-  (let [issues (jdbc/execute! db formatted-query)]
-    (log/info (str "count: " (count issues)))
-    issues))
+  (let [items (jdbc/execute! db formatted-query)]
+    (log/info (str "count: " (count items)))
+    items))
 
 (defn- no-modifiers-selected? [{:keys [secondary-contexts-unassigned-selected
                                        secondary-contexts-inverted]}]
@@ -84,7 +84,7 @@
   (when link-issue (throw (IllegalArgumentException. "'link-issue' shouldn't be supplied here any longer")))
   (when-not selected-context-id (throw (IllegalArgumentException. "selected-context-id must not be nil")))
   (let [opts (modify opts)
-        issues (do-query db 
+        items (do-query db 
                          (core/search-related-items
                           q
                           {:selected-context-id selected-context-id
@@ -93,7 +93,7 @@
                            :join-ids            (join-ids opts)
                            :inverted-mode?      (:secondary-contexts-inverted opts)}
                           ctx))
-        results (->> (seq issues)
+        results (->> (seq items)
                      (map post-process)
                      (map post-process-contexts))]
     (when (and limit (> (count results) limit)) 
@@ -111,11 +111,11 @@
 
 (defn get-title
   [db {:keys [id]}] 
-  (-> {:select   [:issues.title]
-       :from     [:issues]
-       :where    [:= :issues.id [:inline id]]
-       :group-by [:issues.id]
-       :order-by [[:issues.updated_at :desc]]}
+  (-> {:select   [:items.title]
+       :from     [:items]
+       :where    [:= :items.id [:inline id]]
+       :group-by [:items.id]
+       :order-by [[:items.updated_at :desc]]}
       sql/format
       (#(jdbc/execute-one! db % {:return-keys true}))
       un-namespace-keys
@@ -147,8 +147,8 @@
     (concat front (reverse (sort-by #(get-in % [1 1]) back)))))
 
 (defn get-aggregated-contexts
-  [db issues highlighted-secondary-contexts]
-  (->> issues
+  [db items highlighted-secondary-contexts]
+  (->> items
        (map #(get-in % [:data :contexts]))
        (map #(filter (fn [[_id {:keys [show-badge? is-context?]}]] 
                        ;; TODO dedup with same code in context_badges.cljs

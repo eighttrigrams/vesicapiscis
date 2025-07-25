@@ -9,10 +9,10 @@
            (not-empty (:short_title container)))
       (:title container)))
 
-(defn set-collection-titles-of-new-issue [db item-id]
-  (let [data (:issues/data (jdbc/execute-one! db
+(defn set-collection-titles-of-new-item [db item-id]
+  (let [data (:items/data (jdbc/execute-one! db
                                               (sql/format {:select [:data]
-                                                           :from   [:issues]
+                                                           :from   [:items]
                                                            :where  [:= :id [:inline item-id]]})
                                               {:return-keys true}))
         data (cond (nil? data) {}
@@ -21,22 +21,22 @@
                data
                (assoc data "contexts" {}))
         contexts (dissoc (into {}
-                               (map (fn [{:issues/keys [id title short_title is_context]}]
+                               (map (fn [{:items/keys [id title short_title is_context]}]
                                       [id {:title (if (seq short_title)
                                             short_title
                                             title)
                                            :show-badge? true
                                            :is-context? (boolean is_context)}]
                                       ) (jdbc/execute! db
-                                                      (sql/format {:select [:issues.id :title :short_title :is_context]
+                                                      (sql/format {:select [:items.id :title :short_title :is_context]
                                                                    :from   [:relations]
-                                                                   :join   [:issues [:= :relations.owner_id :issues.id]]
+                                                                   :join   [:items [:= :relations.owner_id :items.id]]
                                                                    :where  [:= :relations.target_id [:inline item-id]]})
                                                       {:return-keys true})))
                          item-id)]
     (log/info (str "item-id: " item-id ". contexts: " contexts "."))
     (jdbc/execute-one! db
-                       (sql/format {:update [:issues]
+                       (sql/format {:update [:items]
                                     :where  [:= :id [:inline item-id]]
                                     :set    {:data [:inline (json/generate-string (assoc data "contexts" contexts))]}})
                        {:return-keys true})))
@@ -46,9 +46,9 @@
    @param constraints a list of ids; when set, the contexts of the item with item-id will be reduced to the ones present in that list
      so the use case is not to set the title in an item's context (with a given id), but to remove contexts"
   [db item-id id {:keys [short_title title new-contexts show-badge? remove-from-container? is-context?]}]
-  (let [data (:issues/data (jdbc/execute-one! db
+  (let [data (:items/data (jdbc/execute-one! db
                                               (sql/format {:select [:data]
-                                                           :from   [:issues]
+                                                           :from   [:items]
                                                            :where  [:= :id [:inline item-id]]})
                                               {:return-keys true}))
         data (cond (nil? data) {}
@@ -78,7 +78,7 @@
                                                                           title)}
                                                     (not (nil? is-context?)) (assoc :is-context? is-context?)))))))]
     (jdbc/execute-one! db
-                       (sql/format {:update [:issues]
+                       (sql/format {:update [:items]
                                     :where  [:= :id [:inline item-id]]
                                     :set    {:data [:inline (json/generate-string data)]}})
                        {:return-keys true})))
