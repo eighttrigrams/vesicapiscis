@@ -45,7 +45,7 @@
   "Standard use case is that you know item-id references id via contexts. That id has a new title, so we update it.
    @param constraints a list of ids; when set, the contexts of the item with item-id will be reduced to the ones present in that list
      so the use case is not to set the title in an item's context (with a given id), but to remove contexts"
-  [db item-id id {:keys [short_title title new-contexts show-badge? remove-from-container?]}]
+  [db item-id id {:keys [short_title title new-contexts show-badge? remove-from-container? is-context?]}]
   (let [data (:issues/data (jdbc/execute-one! db
                                               (sql/format {:select [:data]
                                                            :from   [:issues]
@@ -64,15 +64,19 @@
                                          new-contexts
                                          :else
                                          (if (map? (get contexts (str id)))
-                                           (assoc-in contexts [(str id) "title"]  
-                                                     (if (seq short_title)
-                                                       short_title
-                                                       title))
+                                           (-> contexts
+                                               (assoc-in [(str id) "title"]  
+                                                         (if (seq short_title)
+                                                           short_title
+                                                           title))
+                                               (cond-> (not (nil? is-context?)) 
+                                                 (assoc-in [(str id) "is-context?"] is-context?)))
                                            (assoc contexts (str id)   
-                                                  {:show-badge? show-badge?
-                                                   :title       (if (seq short_title)
-                                                                  short_title
-                                                                  title)})))))]
+                                                  (cond-> {:show-badge? show-badge?
+                                                           :title       (if (seq short_title)
+                                                                          short_title
+                                                                          title)}
+                                                    (not (nil? is-context?)) (assoc :is-context? is-context?)))))))]
     (jdbc/execute-one! db
                        (sql/format {:update [:issues]
                                     :where  [:= :id [:inline item-id]]
@@ -121,14 +125,16 @@
   (let [contexts (merge (:contexts (:data item))
                         {(:id another-item) 
                          {:title (get-title another-item)
-                          :show-badge? show-badge?}})]
+                          :show-badge? show-badge?
+                          :is-context? (boolean (:is_context another-item))}})]
     (set-containers-of-item! db item contexts)
     (update-collection-title-in-collection-items db 
                                                  (:id item) 
                                                  (:id another-item)
                                                  {:short_title (:short_title another-item)
                                                   :title (:title another-item)
-                                                  :show-badge? show-badge?})))
+                                                  :show-badge? show-badge?
+                                                  :is-context? (boolean (:is_context another-item))})))
 
 (defn unlink-item-from-another-item!
   [db item another-item]

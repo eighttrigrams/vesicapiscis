@@ -70,8 +70,31 @@
         (is (contains? (get-in updated-item1 [:data :contexts]) (:id item2)))
         (is (= "item2" (get-in updated-item1 [:data :contexts (:id item2) :title])))
         (is (= true (get-in updated-item1 [:data :contexts (:id item2) :show-badge?])))
+        ;; Verify :is-context? is set correctly (item2 is not a context)
+        (is (= false (get-in updated-item1 [:data :contexts (:id item2) :is-context?])))
         ;; Verify original context is still there
         (is (contains? (get-in updated-item1 [:data :contexts]) context-id))))))
+  
+  (test-with-reset-db-and-time "sets :is-context? property correctly when linking context and non-context items"
+    ;; Create initial context and items
+    (let [context (ds/new-context db {:title "Test Context"})
+          context-id (:id context)
+          item1 (ds/new-item db "Item 1" "item1" #{context-id} 1)
+          another-context (ds/new-context db {:title "Another Context"})]
+      ;; Link item1 to the context
+      (relations/link-item-to-another-item! db item1 another-context true)
+      ;; Link item1 to another regular item  
+      (let [item2 (ds/new-item db "Item 2" "item2" #{context-id} 2)]
+        (relations/link-item-to-another-item! db item1 item2 false)
+        ;; Retrieve updated item1 to verify the links
+        (let [updated-item1 (ds/get-item db {:id (:id item1)})]
+          ;; Verify context has :is-context? = true
+          (is (= true (get-in updated-item1 [:data :contexts (:id another-context) :is-context?])))
+          ;; Verify regular item has :is-context? = false
+          (is (= false (get-in updated-item1 [:data :contexts (:id item2) :is-context?])))
+          ;; Verify show-badge? values are set correctly
+          (is (= true (get-in updated-item1 [:data :contexts (:id another-context) :show-badge?])))
+          (is (= false (get-in updated-item1 [:data :contexts (:id item2) :show-badge?])))))))
 
 (deftest unlink-item-from-another-item-test
   (test-with-reset-db-and-time "unlinks item from another item successfully"
@@ -108,7 +131,7 @@
         (is (= false result))
         ;; Verify context is still there
         (let [unchanged-item1 (ds/get-item db {:id (:id item1)})]
-          (is (contains? (get-in unchanged-item1 [:data :contexts]) context-id))))))
+          (is (contains? (get-in unchanged-item1 [:data :contexts]) context-id)))))))
   
   (test-with-reset-db-and-time "allows unlinking when item is a context"
     ;; Create a context and make it a container for itself (edge case)
@@ -129,4 +152,4 @@
         (is (= true result))
         ;; Verify context2 is no longer in context1's contexts
         (let [updated-context1 (ds/get-item db {:id context1-id})]
-          (is (not (contains? (get-in updated-context1 [:data :contexts]) context2-id))))))))
+          (is (not (contains? (get-in updated-context1 [:data :contexts]) context2-id)))))))
