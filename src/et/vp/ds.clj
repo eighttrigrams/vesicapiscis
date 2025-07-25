@@ -52,12 +52,13 @@
 (declare get-item)
 
 (defn switch-between-issue-and-context! [db {:keys [id is_context] :as item}]
+  (log/info {:id id :is_context is_context} "switch-between-issue-and-context!")
   (let [contexts (-> item :data :contexts)]
     (if (or
            (not is_context) 
            (seq contexts))
       (do
-        ;; Update the item's is_context status
+        (log/info "Update the item's is_context status")
         (jdbc/execute-one! db
                            (sql/format {:update [:issues]
                                         :where  [:= :id [:inline id]]
@@ -65,15 +66,19 @@
                                                  :updated_at_ctx [:raw "NOW()"]
                                                  :updated_at  [:raw "NOW()"]}})
                            {:return-keys true})
-        ;; Update all items that have this item in their contexts
+        (log/info "Update all items that have this item in their contexts")
         (let [related-items (jdbc/execute! db
                                            (sql/format {:select [:item_id]
                                                         :from   [:relations]
                                                         :where  [:= :container_id [:inline id]]})
                                            {:return-keys true})]
+          (log/info "Updating related items" )
           (doseq [{:relations/keys [item_id]} related-items]
+            (log/info {:item_id item_id} "Updating related item")
             (datastore.relations/update-collection-title-in-collection-items
-             db item_id id {:is-context? (not is_context)}))))
+             db item_id id {:is-context? (not is_context)
+                            :title (:title item)
+                            :short_title (:short_title item)}))))
       (log/info {:has-contexts? (seq contexts)
                  :is-context? is_context} "can't flip context"))
     (get-item db item)))

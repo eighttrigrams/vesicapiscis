@@ -176,11 +176,9 @@
         ;; Verify the related item now shows it as :is-context? true
         (let [updated-related (ds/get-item db {:id (:id related-item)})
               updated-related-data (get-in updated-related [:data :contexts (:id item)])]
-          (prn "up" updated-related-data)
           (is (= true (:is-context? updated-related-data)))
           ;; There was a bug, this here is to prevent regression
-          ;; TODO fix
-          #_(is (= "regular" (:title updated-related-data)))))))
+          (is (= "regular" (:title updated-related-data)))))))
   
   (test-with-reset-db-and-time "switches context to regular item when it has associated contexts and updates related items"
     ;; Create a context and items that relate to it
