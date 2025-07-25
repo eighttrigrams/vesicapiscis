@@ -68,15 +68,15 @@
                            {:return-keys true})
         (log/info "Update all items that have this item in their contexts")
         (let [related-items (jdbc/execute! db
-                                           (sql/format {:select [:item_id]
+                                           (sql/format {:select [:target_id]
                                                         :from   [:relations]
-                                                        :where  [:= :container_id [:inline id]]})
+                                                        :where  [:= :owner_id [:inline id]]})
                                            {:return-keys true})]
           (log/info "Updating related items" )
-          (doseq [{:relations/keys [item_id]} related-items]
-            (log/info {:item_id item_id} "Updating related item")
+          (doseq [{:relations/keys [target_id]} related-items]
+            (log/info {:target_id target_id} "Updating related item")
             (datastore.relations/update-collection-title-in-collection-items
-             db item_id id {:is-context? (not is_context)
+             db target_id id {:is-context? (not is_context)
                             :title (:title item)
                             :short_title (:short_title item)}))))
       (log/info {:has-contexts? (seq contexts)
@@ -87,14 +87,14 @@
   (count (jdbc/execute! db
                         (sql/format {:select :*
                                      :from   [:relations]
-                                     :where  [:= :container_id id]})
+                                     :where  [:= :owner_id id]})
                         {:return-keys true})))
 
 (defn delete-item
   [db {:keys [id]}]
   (delete-date db id)
   (jdbc/execute! db (sql/format {:delete-from [:relations]
-                                 :where [:= :item_id [:inline id]]}))
+                                 :where [:= :target_id [:inline id]]}))
   (jdbc/execute! db (sql/format {:delete-from [:issues]
                                  :where [:= :id [:inline id]]})))
 
@@ -102,10 +102,10 @@
 
 (defn- basic-issues-query [id]
   {:select   [:issues.*
-              [[:array_agg :relations.container_id] :relations_id]
+              [[:array_agg :relations.owner_id] :relations_id]
               [[:array_agg :relations.annotation] :relations_annotation]]
    :from     [:issues]
-   :join     [:relations [:= :issues.id :relations.item_id]]
+   :join     [:relations [:= :issues.id :relations.target_id]]
    :where    [:= :issues.id [:inline id]]
    :group-by [:issues.id]
    :order-by [[:issues.updated_at :desc]]})
@@ -325,7 +325,7 @@
 (defn- insert-issue-relations! [db values]
   (jdbc/execute! db
                  (sql/format {:insert-into [:relations]
-                              :columns     [:container_id :item_id]
+                              :columns     [:owner_id :target_id]
                               :values      values})))
 
 (defn new-item

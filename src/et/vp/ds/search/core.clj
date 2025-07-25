@@ -19,12 +19,12 @@
 (defn exclusion-clause [selected-context-id mode]
   [:not [:in :issues.id 
          (if (= :issues mode)
-           {:select :relations.item_id
+           {:select :relations.target_id
             :from   :relations
-            :where  [:= :relations.container_id [:inline selected-context-id]]}
-           {:select :relations.container_id
+            :where  [:= :relations.owner_id [:inline selected-context-id]]}
+           {:select :relations.owner_id
             :from   :relations
-            :where  [:= :relations.item_id selected-context-id]})]])
+            :where  [:= :relations.target_id selected-context-id]})]])
 
 (defn- remove-some-chars [q]
   (-> q
@@ -76,12 +76,12 @@
         [:in :issues.id
          (merge {:select   :issues.id
                  :from     [:issues]
-                 :join     [:relations [:= :issues.id :relations.item_id]]
+                 :join     [:relations [:= :issues.id :relations.target_id]]
                  :group-by :issues.id
                  :having   [:raw (str "COUNT(issues.id) = " 
                                       (if unassigned-mode? 1
                                           (count join-ids)))]}
-                (when-not unassigned-mode? {:where [:in :relations.container_id [:inline join-ids]]}))]]
+                (when-not unassigned-mode? {:where [:in :relations.owner_id [:inline join-ids]]}))]]
     (if inverted-mode?
       [:not r]
       r)))
@@ -89,8 +89,8 @@
 (defn- or-partial [join-ids]
   {:select :issues.id
    :from   [:issues]
-   :join   [:relations [:= :issues.id :relations.item_id]]
-   :where  [:in :relations.container_id [:inline join-ids]]})
+   :join   [:relations [:= :issues.id :relations.target_id]]
+   :where  [:in :relations.owner_id [:inline join-ids]]})
 
 (defn- or-query 
   [join-ids unassigned-mode?]
@@ -101,7 +101,7 @@
      [:in :issues.id
       {:select   :issues.id
        :from     [:issues]
-       :join     [:relations [:= :issues.id :relations.item_id]]
+       :join     [:relations [:= :issues.id :relations.target_id]]
        :group-by :issues.id
        :having   [:raw "COUNT(issues.id) > 1"]}]]
     [:not [:in :issues.id
@@ -141,10 +141,10 @@
                        (and-query join-ids unassigned-mode? inverted-mode?)))
                    (get-search-clause q)
                    (get-events-exist-clause search-mode)
-                   [:= :relations.container_id [:raw selected-context-id]]
+                   [:= :relations.owner_id [:raw selected-context-id]]
                    (when (or (= 2 search-mode) (= 3 search-mode))
                      [:> :sort_idx 0])]}
          {:order-by (order-by search-mode)}
          (when limit {:limit limit})
-         {:join [:relations [:= :issues.id :relations.item_id]]})
+         {:join [:relations [:= :issues.id :relations.target_id]]})
         sql/format)))
