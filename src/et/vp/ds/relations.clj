@@ -116,38 +116,39 @@
     (log/info {:is_context is_context
                :item (select-keys item [:id :title])} "cant take out the remaining context if item is not a context")))
 
-(defn link-item-to-container!
-  [db item container show-badge?]
+(defn link-item-to-another-item!
+  [db item another-item show-badge?]
   (let [contexts (merge (:contexts (:data item))
-                        {(:id container) 
-                         {:title (get-title container)
+                        {(:id another-item) 
+                         {:title (get-title another-item)
                           :show-badge? show-badge?}})]
     (set-containers-of-item! db item contexts)
     (update-collection-title-in-collection-items db 
                                                  (:id item) 
-                                                 (:id container)
-                                                 {:short_title (:short_title container)
-                                                  :title (:title container)
+                                                 (:id another-item)
+                                                 {:short_title (:short_title another-item)
+                                                  :title (:title another-item)
                                                   :show-badge? show-badge?})))
 
-(defn unlink-item-from-container!
-  [db item container]
-  (let [selected-item (update-in item [:data :contexts] #(dissoc % (:id container)))
+(defn unlink-item-from-another-item!
+  [db item another-item]
+  (let [selected-item (update-in item [:data :contexts] #(dissoc % (:id another-item)))
         containers (:contexts (:data selected-item))]
     (log/info {:is_context (:is_context item)
-               :containers containers} "unlink-item-from-container!")
+               :containers containers} "unlink-item-from-another-item!")
     (if-not (or (seq (keys containers))
                 (:is_context item)) 
       (do
         (log/info {:item (select-keys item [:id :title])
-                   :container (select-keys item [:id :title])} "can't unlink item from container")
+                   :container (select-keys item [:id :title])} "can't unlink item from another item")
         false)
       (do
         (set-containers-of-item! db selected-item containers)
-        (update-collection-title-in-collection-items db
-                                                                         (:id selected-item)
-                                                                         (:id container) 
-                                                                         {:short_title nil
-                                                                          :title nil
-                                                                          :remove-from-container? true})
+        (update-collection-title-in-collection-items 
+         db
+         (:id selected-item)
+         (:id another-item) 
+         {:short_title            nil
+          :title                  nil
+          :remove-from-container? true})
         true))))
