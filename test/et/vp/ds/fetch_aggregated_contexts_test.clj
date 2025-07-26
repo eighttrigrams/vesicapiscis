@@ -51,11 +51,11 @@
     (let [context-1 (new-context db {:title "Context 1" :short-title "ctx1"})
           context-2 (new-context db {:title "Context 2" :short-title "ctx2"})
           context-3 (new-context db {:title "Context 3" :short-title "ctx3"})
-          items [{:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true}
-                                     (:id context-2) {:title "Context 2" :show-badge? true}}}}
-                  {:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true}
-                                     (:id context-3) {:title "Context 3" :show-badge? false}}}}
-                  {:data {:contexts {(:id context-2) {:title "Context 2" :show-badge? true}}}}]
+          items [{:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true :is-context? true}
+                                     (:id context-2) {:title "Context 2" :show-badge? true :is-context? true}}}}
+                  {:data {:contexts {(:id context-1) {:title "Context 1" :show-badge? true :is-context? true}
+                                     (:id context-3) {:title "Context 3" :show-badge? false :is-context? true}}}}
+                  {:data {:contexts {(:id context-2) {:title "Context 2" :show-badge? true :is-context? true}}}}]
           result (search/get-aggregated-contexts db items [])]
       ;; Should aggregate contexts and count their occurrences
       ;; Context 1 appears 2 times (show-badge? true in both)
