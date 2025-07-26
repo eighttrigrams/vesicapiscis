@@ -150,13 +150,7 @@
   [db items highlighted-secondary-contexts]
   (->> items
        (map #(get-in % [:data :contexts]))
-       (map #(filter (fn [[_id {:keys [show-badge? is-context?]}]] 
-                       ;; TODO dedup with same code in context_badges.cljs
-                       (if-not (boolean? is-context?)
-                         show-badge?
-                         (and show-badge?
-                              is-context?)
-                         )) %))
+       (map #(filter (fn [[_id {:keys [show-badge? is-context?]}]] (and show-badge? is-context?)) %))
        (map seq)
        (apply concat)
        (group-by first)
