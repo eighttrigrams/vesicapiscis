@@ -24,7 +24,8 @@
                                    (catch Exception e
                                      (log/error {:e e
                                                  :k k
-                                                 :v v} 
+                                                 :v v
+                                                 :item item} 
                                                 "whoops while trying to convert to int")
                                      [k v])))
                             contexts)))) 
