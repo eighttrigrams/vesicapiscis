@@ -19,7 +19,14 @@
     (update-in item [:data :contexts] 
                (fn [contexts]
                  (into {} (map (fn [[k v]]
-                              [(Integer/parseInt (name k)) v])
+                                 (try
+                                   [(Integer/parseInt (name k)) v]
+                                   (catch Exception e
+                                     (log/error {:e e
+                                                 :k k
+                                                 :v v} 
+                                                "whoops while trying to convert to int")
+                                     [k v])))
                             contexts)))) 
     item))
 
