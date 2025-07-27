@@ -29,8 +29,12 @@
      (update-in [:data :contexts] 
                 (fn [contexts]
                   (into {} 
-                        (map (fn [[k v]]
-                               (let [id (Integer/parseInt (name k))]
+                        (keep (fn [[k v]]
+                               (when-let 
+                                [id (try (Integer/parseInt (name k))
+                                                  (catch Exception e 
+                                                    (log/error {:e e :item item :k k :v v})
+                                                    nil))]
                                  [id
                                   (if (map? v)
                                     (assoc v :annotation (get m id))
