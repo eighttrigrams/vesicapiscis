@@ -10,9 +10,12 @@
 
 (defn- post-process [result]
   (let [{:keys [annotation item_annotation] :as r} (post-process-base result)]
-    (cond-> r 
+    (cond-> r
       (empty? annotation)
-      (assoc :annotation item_annotation))))
+      (assoc :annotation item_annotation)
+
+      item_annotation
+      (assoc-in [:data :annotation] item_annotation))))
 
 (defn- post-process-contexts [item]
   (if (-> item :data :contexts)
