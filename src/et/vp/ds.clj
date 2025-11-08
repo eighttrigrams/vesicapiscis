@@ -177,6 +177,38 @@
       sql/format
       (#(jdbc/execute! db % {:return-keys true}))))
 
+(defn- save-description-to-history [db id description]
+  (when (and description (not (clojure.string/blank? description)))
+    (let [max-version-result (jdbc/execute-one! db
+                                                (sql/format {:select [[[:coalesce [:max :version] 0] :max_version]]
+                                                            :from [:history]
+                                                            :where [:= :id [:inline id]]})
+                                                {:return-keys true})
+          new-version (inc (:max_version max-version-result))
+          _ (jdbc/execute-one! db
+                              (sql/format {:insert-into [:history]
+                                          :values [{:id [:inline id]
+                                                   :text [:inline description]
+                                                   :version [:inline new-version]}]})
+                              {:return-keys true})
+          history-count (:count (jdbc/execute-one! db
+                                                   (sql/format {:select [[[:count :*] :count]]
+                                                               :from [:history]
+                                                               :where [:= :id [:inline id]]})
+                                                   {:return-keys true}))]
+      (when (> history-count 5)
+        (jdbc/execute! db
+                      (sql/format {:delete-from [:history]
+                                  :where [:and
+                                          [:= :id [:inline id]]
+                                          [:in :version
+                                           {:select [:version]
+                                            :from [:history]
+                                            :where [:= :id [:inline id]]
+                                            :order-by [[:version :asc]]
+                                            :limit (- history-count 5)}]]})))))
+  nil)
+
 (defn- update-item' [db {:keys [id title short_title annotation sort_idx tags data] :as item}]
   (log/info (str "update-item!!!!!!!!!" title ":" sort_idx "<-" (integer? sort_idx)))
   (let [old-item      (get-item db item)
@@ -236,13 +268,16 @@
   (get-item db item))
 
 (defn update-context-description [db {:keys [id description]}]
-  (jdbc/execute-one! db
-                     (sql/format {:update [:items]
-                                  :set    {:description    [:inline description]
-                                           :updated_at_ctx [:raw "NOW()"]}
-                                  :where  [:= :id [:inline id]]})
-                     {:return-keys true})
-  (get-item db {:id id}))
+  (let [old-item (get-item db {:id id})
+        old-description (:description old-item)]
+    (save-description-to-history db id old-description)
+    (jdbc/execute-one! db
+                       (sql/format {:update [:items]
+                                    :set    {:description    [:inline description]
+                                             :updated_at_ctx [:raw "NOW()"]}
+                                    :where  [:= :id [:inline id]]})
+                       {:return-keys true})
+    (get-item db {:id id})))
 
 (defn store-current-view [db {:keys [id] :as selected-item} {:keys [title]}]
   (let [data (:data (get-item db selected-item))
