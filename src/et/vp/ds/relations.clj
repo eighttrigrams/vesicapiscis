@@ -143,18 +143,27 @@
     (log/info {:is_context (:is_context item)
                :containers containers} "unlink-item-from-another-item!")
     (if-not (or (seq (keys containers))
-                (:is_context item)) 
+                (:is_context item))
       (do
         (log/info {:item (select-keys item [:id :title])
                    :container (select-keys item [:id :title])} "can't unlink item from another item")
         false)
       (do
         (set-containers-of-item! db selected-item containers)
-        (update-collection-title-in-collection-items 
+        (update-collection-title-in-collection-items
          db
          (:id selected-item)
-         (:id another-item) 
+         (:id another-item)
          {:short_title            nil
           :title                  nil
           :remove-from-container? true})
         true))))
+
+(defn update-relation-annotation!
+  [db item-id context-id annotation]
+  (jdbc/execute-one! db
+                     (sql/format {:update [:relations]
+                                  :set {:annotation [:inline annotation]}
+                                  :where [:and
+                                          [:= :target_id [:inline item-id]]
+                                          [:= :owner_id [:inline context-id]]]})))
