@@ -1,3 +1,1 @@
-{:linters
- {:unresolved-var
-  {:exclude [cambium.core/error cambium.core/info]}}}
+{:linters {:unresolved-var {:exclude []}}}
