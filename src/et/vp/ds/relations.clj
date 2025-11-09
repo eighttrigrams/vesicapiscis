@@ -25,22 +25,21 @@
                                        {:title (if (seq short_title) short_title title)
                                         :show-badge? true
                                         :is-context? (boolean is_context)}])
-                                    (jdbc/execute!
-                                     db
-                                     (sql/format
-                                      {:select [:items.id :title :short_title :is_context]
-                                       :from [:relations]
-                                       :join [:items [:= :relations.owner_id :items.id]]
-                                       :where [:= :relations.target_id [:inline item-id]]})
-                                     {:return-keys true})))
-                  item-id)]
+                                 (jdbc/execute!
+                                   db
+                                   (sql/format {:select [:items.id :title :short_title :is_context]
+                                                :from [:relations]
+                                                :join [:items [:= :relations.owner_id :items.id]]
+                                                :where [:= :relations.target_id [:inline item-id]]})
+                                   {:return-keys true})))
+                   item-id)]
     (log/info (str "item-id: " item-id ". contexts: " contexts "."))
     (jdbc/execute-one!
-     db
-     (sql/format {:update [:items]
-                  :where [:= :id [:inline item-id]]
-                  :set {:data [:inline (json/generate-string (assoc data "contexts" contexts))]}})
-     {:return-keys true})))
+      db
+      (sql/format {:update [:items]
+                   :where [:= :id [:inline item-id]]
+                   :set {:data [:inline (json/generate-string (assoc data "contexts" contexts))]}})
+      {:return-keys true})))
 
 (defn update-collection-title-in-collection-items
   "Standard use case is that you know item-id references id via contexts. That id has a new title, so we update it.
@@ -56,23 +55,23 @@
         data (cond (nil? data) {}
                    :else (json/parse-string (.getValue data)))
         data (if (get data "contexts") data (assoc data "contexts" {}))
-        data (update
-              data
-              "contexts"
-              (fn [contexts]
-                (cond remove-from-container? (dissoc contexts (str id))
-                      (map? new-contexts) new-contexts
-                      :else
-                      (if (map? (get contexts (str id)))
-                        (-> contexts
-                            (assoc-in [(str id) "title"] (if (seq short_title) short_title title))
-                            (cond-> (not (nil? is-context?)) (assoc-in [(str id) "is-context?"]
-                                                              is-context?)))
-                        (assoc contexts
-                               (str id)
-                               (cond-> {:show-badge? show-badge?
-                                        :title (if (seq short_title) short_title title)}
-                                 (not (nil? is-context?)) (assoc :is-context? is-context?)))))))]
+        data (update data
+                     "contexts"
+                     (fn [contexts]
+                       (cond remove-from-container? (dissoc contexts (str id))
+                             (map? new-contexts) new-contexts
+                             :else (if (map? (get contexts (str id)))
+                                     (-> contexts
+                                         (assoc-in [(str id) "title"]
+                                                   (if (seq short_title) short_title title))
+                                         (cond-> (not (nil? is-context?))
+                                                   (assoc-in [(str id) "is-context?"] is-context?)))
+                                     (assoc contexts
+                                       (str id) (cond-> {:show-badge? show-badge?
+                                                         :title
+                                                           (if (seq short_title) short_title title)}
+                                                  (not (nil? is-context?)) (assoc :is-context?
+                                                                             is-context?)))))))]
     (jdbc/execute-one! db
                        (sql/format {:update [:items]
                                     :where [:= :id [:inline item-id]]
@@ -82,11 +81,11 @@
 (defn update-collection-title-in-collection-items-for-children
   [db id title short_title]
   (let [item-ids (doall (map :relations/target_id
-                             (jdbc/execute! db
-                                            (sql/format {:select [:target_id]
-                                                         :from [:relations]
-                                                         :where [:= :owner_id [:inline id]]})
-                                            {:return-keys true})))]
+                          (jdbc/execute! db
+                                         (sql/format {:select [:target_id]
+                                                      :from [:relations]
+                                                      :where [:= :owner_id [:inline id]]})
+                                         {:return-keys true})))]
     (doall (for [item-id item-ids]
              (update-collection-title-in-collection-items db
                                                           item-id
@@ -116,10 +115,10 @@
   (if (or is_context (seq (keys containers)))
     (do (set-containers-of-item! db item containers)
         (update-collection-title-in-collection-items
-         db
-         (:id item)
-         nil
-         {:short_title nil :title nil :new-contexts containers}))
+          db
+          (:id item)
+          nil
+          {:short_title nil :title nil :new-contexts containers}))
     (log/info {:is_context is_context :item (select-keys item [:id :title])}
               "cant take out the remaining context if item is not a context")))
 
@@ -137,7 +136,7 @@
                                                   :title (:title another-item)
                                                   :show-badge? show-badge?
                                                   :is-context? (boolean (:is_context
-                                                                         another-item))})))
+                                                                          another-item))})))
 
 (defn unlink-item-from-another-item!
   [db item another-item]
@@ -152,10 +151,10 @@
           false)
       (do (set-containers-of-item! db selected-item containers)
           (update-collection-title-in-collection-items
-           db
-           (:id selected-item)
-           (:id another-item)
-           {:short_title nil :title nil :remove-from-container? true})
+            db
+            (:id selected-item)
+            (:id another-item)
+            {:short_title nil :title nil :remove-from-container? true})
           true))))
 
 (defn update-relation-annotation!

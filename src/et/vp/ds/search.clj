@@ -28,7 +28,7 @@
                                      (log/error {:e e :k k :v v :item item}
                                                 "whoops while trying to convert to int")
                                      [k v])))
-                            contexts))))
+                         contexts))))
     item))
 
 (comment
@@ -39,7 +39,7 @@
   [db q {:keys [all-items? link-context link-item] :as opts} ctx]
   (when (:selected-item opts)
     (throw (IllegalArgumentException.
-            "Didn't expect 'selected-item' here. Did you mean to pass 'selected-item-id'?")))
+             "Didn't expect 'selected-item' here. Did you mean to pass 'selected-item-id'?")))
   (when (and link-context all-items?)
     (throw (IllegalArgumentException. "Can't combine 'all-items?' and 'link-context'")))
   (when (and link-item (not all-items?))
@@ -76,7 +76,7 @@
     (and (seq (:selected-secondary-contexts opts))
          (:secondary-contexts-unassigned-selected opts)
          (not (:secondary-contexts-inverted opts)))
-    (assoc :secondary-contexts-unassigned-selected nil)))
+      (assoc :secondary-contexts-unassigned-selected nil)))
 
 (defn search-related-items
   [db q selected-item-id {:keys [link-item search-mode] :as opts} {:keys [limit] :as ctx}]
@@ -87,13 +87,13 @@
   (let [opts (modify opts)
         items (do-query db
                         (core/search-related-items
-                         q
-                         {:selected-item-id selected-item-id
-                          :search-mode search-mode
-                          :unassigned-mode? (:secondary-contexts-unassigned-selected opts)
-                          :join-ids (join-ids opts)
-                          :inverted-mode? (:secondary-contexts-inverted opts)}
-                         ctx))
+                          q
+                          {:selected-item-id selected-item-id
+                           :search-mode search-mode
+                           :unassigned-mode? (:secondary-contexts-unassigned-selected opts)
+                           :join-ids (join-ids opts)
+                           :inverted-mode? (:secondary-contexts-inverted opts)}
+                          ctx))
         results (->> (seq items)
                      (map post-process)
                      (map post-process-contexts))]
@@ -128,13 +128,13 @@
               (if-let [title (get-title db {:id val})]
                 (conj acc [val [title 0 true]])
                 acc)))
-          []
-          highlighted-secondary-contexts))
+    []
+    highlighted-secondary-contexts))
 
 (defn- sort-secondary-contexts
   [db highlighted-secondary-contexts secondary-contexts]
   (let [highlighted-secondary-contexts (pre-process-highlighted-secondary-contexts
-                                        highlighted-secondary-contexts)
+                                         highlighted-secondary-contexts)
         secondary-contexts (into {} secondary-contexts)
         front (calc-highlighted db secondary-contexts highlighted-secondary-contexts)
         back (->> secondary-contexts
@@ -147,7 +147,7 @@
   (->> items
        (map #(get-in % [:data :contexts]))
        (map #(filter (fn [[_id {:keys [show-badge? is-context?]}]] (and show-badge? is-context?))
-                     %))
+               %))
        (map seq)
        (apply concat)
        (group-by first)

@@ -58,12 +58,12 @@
   [join-ids unassigned-mode? inverted-mode?]
   (let [r [:in :items.id
            (merge
-            {:select :items.id
-             :from [:items]
-             :join [:relations [:= :items.id :relations.target_id]]
-             :group-by :items.id
-             :having [:raw (str "COUNT(items.id) = " (if unassigned-mode? 1 (count join-ids)))]}
-            (when-not unassigned-mode? {:where [:in :relations.owner_id [:inline join-ids]]}))]]
+             {:select :items.id
+              :from [:items]
+              :join [:relations [:= :items.id :relations.target_id]]
+              :group-by :items.id
+              :having [:raw (str "COUNT(items.id) = " (if unassigned-mode? 1 (count join-ids)))]}
+             (when-not unassigned-mode? {:where [:in :relations.owner_id [:inline join-ids]]}))]]
     (if inverted-mode? [:not r] r)))
 
 (defn- or-partial
@@ -96,9 +96,8 @@
          [:items.updated_at (if (= 1 search-mode) :asc :desc)])))])
 
 (defn search-related-items
-  [q
-   {:keys [selected-item-id join-ids search-mode unassigned-mode? inverted-mode?]
-    :as _opts} {:keys [limit] :as _ctx}]
+  [q {:keys [selected-item-id join-ids search-mode unassigned-mode? inverted-mode?] :as _opts}
+   {:keys [limit] :as _ctx}]
   (let [or-mode? (when join-ids inverted-mode?)]
     (-> (merge {:select (vec (concat core/select [:relations.annotation]))
                 :from :items

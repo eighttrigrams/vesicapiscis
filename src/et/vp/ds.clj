@@ -10,13 +10,13 @@
   [db item-id]
   (jdbc/execute! db
                  (sql/format
-                  {:update [:items] :set {:date nil} :where [:= :id [:inline item-id]]})))
+                   {:update [:items] :set {:date nil} :where [:= :id [:inline item-id]]})))
 
 (defn insert-date
   [db item-id date]
   (jdbc/execute!
-   db
-   (sql/format {:update [:items] :set {:date [:inline date]} :where [:= :id [:inline item-id]]})))
+    db
+    (sql/format {:update [:items] :set {:date [:inline date]} :where [:= :id [:inline item-id]]})))
 
 (defn- update-contexts
   [item]
@@ -75,12 +75,12 @@
             (doseq [{:relations/keys [target_id]} related-items]
               (log/info {:target_id target_id} "Updating related item")
               (datastore.relations/update-collection-title-in-collection-items
-               db
-               target_id
-               id
-               {:is-context? (not is_context)
-                :title (:title item)
-                :short_title (:short_title item)}))))
+                db
+                target_id
+                id
+                {:is-context? (not is_context)
+                 :title (:title item)
+                 :short_title (:short_title item)}))))
       (log/info {:has-contexts? (seq contexts) :is-context? is_context} "can't flip context"))
     (get-item db item)))
 
@@ -221,7 +221,7 @@
                                      {:text (:history/text row)
                                       :version (:history/version row)
                                       :created_at (:history/created_at row)})
-                                   history-items)
+                                history-items)
         all-versions (if (and current-description (not (clojure.string/blank? current-description)))
                        (concat [{:text current-description
                                  :version (inc (or (:history/version (first history-items)) 0))
@@ -248,21 +248,21 @@
                               (map (fn [[k v]] [k (dissoc v :annotation)]))
                               (into {}))))
                data)
-        set (merge {:title [:inline title]
-                    :short_title [:inline short_title]
-                    :annotation [:inline annotation]
-                    :tags [:inline tags]
-                    :data [:inline (json/generate-string data)]}
-                   (when sort_idx
-                     {:sort_idx
-                      [:inline
-                       (when sort_idx
-                         (if
-                           ;; i think this is for when we are in tests or something
-                           (integer? sort_idx)
-                           sort_idx
-                           (try
-                             (Integer/parseInt sort_idx)
+        set (merge
+              {:title [:inline title]
+               :short_title [:inline short_title]
+               :annotation [:inline annotation]
+               :tags [:inline tags]
+               :data [:inline (json/generate-string data)]}
+              (when sort_idx
+                {:sort_idx
+                   [:inline
+                    (when sort_idx
+                      (if
+                        ;; i think this is for when we are in tests or something
+                        (integer? sort_idx)
+                        sort_idx
+                        (try (Integer/parseInt sort_idx)
                              (catch Exception e
                                (log/error (str "This is bad ----- conversion failed" (.getMessage e)
                                                "-" (:sort_idx old-item)))
@@ -279,10 +279,10 @@
   (let [has-title-changed? (update-item' db item)]
     (when has-title-changed?
       (future (try (datastore.relations/update-collection-title-in-collection-items-for-children
-                    db
-                    id
-                    title
-                    short_title)
+                     db
+                     id
+                     title
+                     short_title)
                    (catch Exception e (log/error (.getMessage e)))))))
   (get-item db item))
 
@@ -313,12 +313,12 @@
   [db {:keys [id] :as selected-item} idx]
   (let [data (:data (get-item db selected-item))
         data (assoc-in data
-              [:views :current]
-              (-> data
-                  :views
-                  :stored
-                  (get idx)
-                  :view))]
+               [:views :current]
+               (-> data
+                   :views
+                   :stored
+                   (get idx)
+                   :view))]
     (jdbc/execute-one! db
                        (sql/format {:update [:items]
                                     :set {:data [:inline (json/generate-string data)]}
@@ -362,8 +362,8 @@
 (defn reprioritize-item
   [db {:keys [id]}]
   (jdbc/execute!
-   db
-   (sql/format {:update [:items] :set {:updated_at [:raw "NOW()"]} :where [:= :id [:inline id]]})))
+    db
+    (sql/format {:update [:items] :set {:updated_at [:raw "NOW()"]} :where [:= :id [:inline id]]})))
 
 (defn- create-new-item!
   ([db title short_title] (create-new-item! db title short_title nil))
@@ -371,13 +371,13 @@
    (let [now (helpers/gen-date)
          id (:items/id (jdbc/execute-one! db
                                           (sql/format
-                                           {:insert-into [:items]
-                                            :columns (concat [:inserted_at :updated_at
-                                                              :updated_at_ctx :title :short_title]
-                                                             (if sort_idx [:sort_idx] []))
-                                            :values [(concat [[:raw now] [:raw now] [:raw now] title
-                                                              short_title]
-                                                             (if sort_idx [sort_idx] []))]})
+                                            {:insert-into [:items]
+                                             :columns (concat [:inserted_at :updated_at
+                                                               :updated_at_ctx :title :short_title]
+                                                              (if sort_idx [:sort_idx] []))
+                                             :values [(concat [[:raw now] [:raw now] [:raw now]
+                                                               title short_title]
+                                                              (if sort_idx [sort_idx] []))]})
                                           {:return-keys true}))]
      (when (empty? title) (insert-date db id (helpers/gen-iso-simple-date-str)))
      id)))
@@ -386,14 +386,14 @@
   [db values]
   (jdbc/execute! db
                  (sql/format
-                  {:insert-into [:relations] :columns [:owner_id :target_id] :values values})))
+                   {:insert-into [:relations] :columns [:owner_id :target_id] :values values})))
 
 (defn new-item
   [db title short-title context-ids-set sort-idx]
   (when-not (seq context-ids-set) (throw (Exception. "won't create a new-item when no contexts")))
   (let [item-id (create-new-item! db title short-title sort-idx)
         values (vec (doall (map (fn [ctx-id] [[:inline ctx-id] [:inline item-id]])
-                                context-ids-set)))]
+                             context-ids-set)))]
     (insert-item-relations! db values)
     (datastore.relations/set-collection-titles-of-new-item db item-id)
     (get-item db {:id item-id})))
