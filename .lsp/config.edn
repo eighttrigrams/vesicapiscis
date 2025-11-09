@@ -1,3 +1,2 @@
 {:source-paths ["src"]
- :source-aliases #{:dev :test}
- :paths-ignore-regex ["^(?!.*/vesicapiscis/).*$"]}
+ :source-aliases #{:dev :test}}

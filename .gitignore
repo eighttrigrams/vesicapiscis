@@ -9,3 +9,6 @@ test_config.edn
 .clj-kondo/*
 !.clj-kondo/
 !.clj-kondo/config.edn
+!.clj-kondo/hooks/
+!.clj-kondo/hooks/*
+hooks.log
