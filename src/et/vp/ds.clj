@@ -209,6 +209,31 @@
                                             :limit (- history-count 5)}]]})))))
   nil)
 
+(defn get-description-history [db {:keys [id]}]
+  (let [current-item (get-item db {:id id})
+        current-description (:description current-item)
+        history-items (jdbc/execute! db
+                                     (sql/format {:select [:text :version :created_at]
+                                                 :from [:history]
+                                                 :where [:= :id [:inline id]]
+                                                 :order-by [[:version :desc]]})
+                                     {:return-keys true})
+        history-items-as-maps (map (fn [row]
+                                     {:text (:history/text row)
+                                      :version (:history/version row)
+                                      :created_at (:history/created_at row)})
+                                   history-items)
+        all-versions (if (and current-description
+                              (not (clojure.string/blank? current-description)))
+                       (concat [{:text current-description
+                                :version (inc (or (:history/version (first history-items)) 0))
+                                :created_at (:updated_at_ctx current-item)
+                                :current true}]
+                              history-items-as-maps)
+                       history-items-as-maps)]
+    {:versions all-versions
+     :total (count all-versions)}))
+
 (defn- update-item' [db {:keys [id title short_title annotation sort_idx tags data] :as item}]
   (log/info (str "update-item!!!!!!!!!" title ":" sort_idx "<-" (integer? sort_idx)))
   (let [old-item      (get-item db item)
