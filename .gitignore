@@ -1,6 +1,11 @@
 .clj-kondo
-.lsp
 .calva
 .cpcache
 .nrepl-port
 test_config.edn
+.lsp/*
+!.lsp/
+!.lsp/config.edn
+.clj-kondo/*
+!.clj-kondo/
+!.clj-kondo/config.edn
