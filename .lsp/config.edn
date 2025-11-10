@@ -1,2 +1,17 @@
 {:source-paths ["src"]
- :source-aliases #{:dev :test}}
+ :source-aliases #{:dev :test}
+ :linters {:clojure-lsp/unused-public-var
+             {:exclude [et.vp.ds/get-item-by-path et.vp.ds/get-items-by-path et.vp.ds/delete-item
+                        et.vp.ds/cycle-search-mode et.vp.ds/remove-stored-context
+                        et.vp.ds.helpers/namespace-keys et.vp.ds/reprioritize-item
+                        et.vp.ds/reprioritize-context et.vp.ds/load-stored-context
+                        et.vp.ds/store-current-view et.vp.ds/update-item
+                        et.vp.ds/update-context-description et.vp.ds/get-description-history
+                        et.vp.ds/switch-between-item-and-context! et.vp.ds/get-item-by-title
+                        et.vp.ds/new-item et.vp.ds/new-context et.vp.ds/get-contained-items-count
+                        et.vp.ds.search/search-items et.vp.ds.search/search-related-items
+                        et.vp.ds.search/get-aggregated-context
+                        et.vp.ds.relations/set-the-containers-of-item!
+                        et.vp.ds.relations/update-relation-annotation!
+                        et.vp.ds.relations/unlink-item-from-another-item!
+                        et.vp.ds.relations/link-item-to-another-item!]}}}
