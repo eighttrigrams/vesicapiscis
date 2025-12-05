@@ -92,7 +92,8 @@
                            :search-mode search-mode
                            :unassigned-mode? (:secondary-contexts-unassigned-selected opts)
                            :join-ids (join-ids opts)
-                           :inverted-mode? (:secondary-contexts-inverted opts)}
+                           :inverted-mode? (:secondary-contexts-inverted opts)
+                           :description-filter (:description-filter opts)}
                           ctx))
         results (->> (seq items)
                      (map post-process)

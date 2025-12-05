@@ -54,6 +54,13 @@
 
 (defn- get-events-exist-clause [search-mode] (when (= 4 search-mode) [:<> :items.date nil]))
 
+(defn- get-description-filter-clause
+  [description-filter]
+  (case description-filter
+    (true :only "only") [:and [:<> :items.description nil] [:not [:= :items.description ""]]]
+    (false :no "no") [:or [:= :items.description nil] [:= :items.description ""]]
+    nil))
+
 (defn- and-query
   [join-ids unassigned-mode? inverted-mode?]
   (let [r [:in :items.id
@@ -96,8 +103,9 @@
          [:items.updated_at (if (= 1 search-mode) :asc :desc)])))])
 
 (defn search-related-items
-  [q {:keys [selected-item-id join-ids search-mode unassigned-mode? inverted-mode?] :as _opts}
-   {:keys [limit] :as _ctx}]
+  [q
+   {:keys [selected-item-id join-ids search-mode unassigned-mode? inverted-mode? description-filter]
+    :as _opts} {:keys [limit] :as _ctx}]
   (let [or-mode? (when join-ids inverted-mode?)]
     (-> (merge {:select (vec (concat core/select [:relations.annotation]))
                 :from :items
@@ -107,6 +115,7 @@
                             (or-query join-ids unassigned-mode?)
                             (and-query join-ids unassigned-mode? inverted-mode?)))
                         (get-search-clause q) (get-events-exist-clause search-mode)
+                        (get-description-filter-clause description-filter)
                         [:= :relations.owner_id [:raw selected-item-id]]
                         (when (or (= 2 search-mode) (= 3 search-mode)) [:> :sort_idx 0])]}
                {:order-by (order-by search-mode)}
