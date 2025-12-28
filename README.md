@@ -1,7 +1,3 @@
 # Vesica Piscis
 
-## Tests
-
-```clojure
-$ clj -X:test
-```
+This code is now directly integrated into https://github.com/eighttrigrams/rhizome
