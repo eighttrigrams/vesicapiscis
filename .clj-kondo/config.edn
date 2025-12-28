@@ -1,3 +1,0 @@
-{:lint-as {mount.core/defstate clojure.core/def
-           cambium.core/deflevel clojure.core/defmacro}
- :hooks {:analyze-call {cambium.core/deflevel hooks.cambium/deflevel}}}
